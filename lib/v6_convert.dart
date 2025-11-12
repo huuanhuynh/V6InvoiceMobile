@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:intl/intl.dart';
 
 /// Lớp hỗ trợ chuyển đổi và định dạng dữ liệu tương tự như bản C#
-class V6Convert {
+class H {
   static const String systemDecimalSymbol = '.'; // mặc định hệ thống
   static const _defaultDateFormat = 'dd/MM/yyyy';
 
@@ -180,6 +180,40 @@ class V6Convert {
     if (type == double) return objectToDecimal(value);
     return value;
   }
+
+  static dynamic getValueIgnoreCase(
+    Map<String, dynamic> map, 
+    String key, {
+    dynamic defaultValue,
+  }) {
+    // 1. Chuyển key cần tìm về dạng chữ thường để chuẩn hóa
+    final lowerCaseKey = key.toLowerCase();
+
+    // 2. Duyệt qua tất cả các key trong map
+    for (final mapKey in map.keys) {
+      // 3. Chuyển key của map về dạng chữ thường để so sánh
+      if (mapKey.toLowerCase() == lowerCaseKey) {
+        // 4. Nếu khớp, trả về giá trị gốc của key đó
+        return map[mapKey];
+      }
+    }
+
+    // 5. Nếu không tìm thấy, trả về giá trị mặc định
+    return defaultValue;
+  }
+
+  Map<String, dynamic> normalizeMapKeys(Map<String, dynamic> originalMap) {
+    final Map<String, dynamic> normalizedMap = {};
+    
+    originalMap.forEach((key, value) {
+      // Thêm key đã chuyển thành chữ thường vào Map mới
+      normalizedMap[key.toLowerCase()] = value;
+    });
+    
+    return normalizedMap;
+  }
+
+
 }
 
 extension _DateDayOfYear on DateTime {

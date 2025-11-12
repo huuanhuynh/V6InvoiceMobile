@@ -173,7 +173,7 @@ class _ItemEditPageState extends State<ItemEditPage> {
 
           // 2. Chuyển đổi sang kiểu số để tính toán
           // Sử dụng hàm tryParse an toàn và xử lý dấu thập phân
-          final soLuong = V6Convert.objectToDecimal(soLuongController.text);
+          final soLuong = H.objectToDecimal(soLuongController.text);
           final donGia = double.tryParse(donGiaController.text.replaceAll(',', '.')) ?? 0.0;
 
           // 3. Tính toán Thành tiền: TIEN_NT2 = SO_LUONG1 * GIA_NT21
@@ -216,14 +216,11 @@ class _ItemEditPageState extends State<ItemEditPage> {
       String? valueField = config != null? config['fvvar'] : fieldKey; // Cần sửa lại, có cấu hình từ catalog để lấy valueField;
       // 3. Lấy giá trị của item đã chọn. 
       // Giả định khóa cần gán là 'fcolumn' (fieldKey)
-      final valueToSet = selectedItem[valueField];  // bị thiếu V6Lookup Config nên sai trường lấy data ở đây.
+      final valueToSet = H.getValueIgnoreCase(selectedItem, valueField!, defaultValue: null);  // bị thiếu V6Lookup Config nên sai trường lấy data ở đây.
 
       if (valueToSet != null) {
-        // 4. Gán giá trị vào controller của trường hiện tại
-        //final controller = _getController(fieldKey);
-        
         // Chuyển đổi giá trị sang chuỗi (sử dụng logic tương tự V6Convert)
-        controller.text = valueToSet.toString().trim(); 
+        controller.text = H.objectToString(valueToSet);
 
         // Nếu bạn muốn tự động tính toán sau khi gán (ví dụ: tính thành tiền)
         // có thể gọi _handleFieldChange(fieldKey, controller.text); ở đây

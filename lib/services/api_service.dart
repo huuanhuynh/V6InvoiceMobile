@@ -38,20 +38,12 @@ class ApiService {
     required int pageSize,
   }) async {
     final url = Uri.parse('$baseUrl/v6-api/catalogs');
-    // string VVar,
-    // string? VValue,
-    // string? Lan,
-    // string? Advance,
-    // string? MaDvcs,
-    // string Type,
-    // int PageIndex,
-    // int PageSize
     final body = jsonEncode({
       'vVar' : vvar,
-      'vValue' : vvar,
-      'lan' : 'V',
-      'maDvcs' : AppSession.baseUnitCode,
-      'advance' : filterValue,
+      'vValue' : filterValue, // giá trị gõ vào để lọc
+      'language' : 'V',
+      'maDvcs' : AppSession.madvcs,
+      'advance' : null, // chưa dùng
       'type': type,
       'pageIndex': pageIndex,
       'pageSize': pageSize,

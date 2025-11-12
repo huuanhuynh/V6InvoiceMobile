@@ -26,7 +26,7 @@ class InvoiceItem {
   Map<String, dynamic> toMap() => {'id': id, ...data};
   double valueOf(String field)
   {
-    if (data.containsKey(field)) return V6Convert.objectToDecimal(data[field]);
+    if (data.containsKey(field)) return H.objectToDecimal(data[field]);
     return 0;
   }
 

@@ -26,8 +26,9 @@ class CatalogPage extends StatefulWidget {
 }
 
 class _CatalogPageState extends State<CatalogPage> {
-  int pageIndex = 1;
+  int pageIndex = 1; int totalPages = 0;
   int pageSize = 20;
+  bool hasMorePage = false; bool hasPreviousPage = false;
   List<dynamic> items = [];
   Map<String, dynamic>? selectedItem;
   bool loading = false;
@@ -80,11 +81,11 @@ class _CatalogPageState extends State<CatalogPage> {
 
       final parsed = apiResponse.data;
       final list = parsed is List ? parsed : (parsed['items'] ?? parsed['data'] ?? []);
-      int pageNumber = parsed['pageNumber'];
-      int totalPages = parsed['totalPages'];
-      int totalCount = parsed['totalCount'];
-      bool hasMorePage = parsed['hasNextPage'];
-      bool hasPreviousPage = parsed['hasPreviousPage'];
+      //int pageNumber = parsed['pageNumber'];
+      totalPages = parsed['totalPages'];
+      //int totalCount = parsed['totalRows'];
+      hasMorePage = parsed['hasNextPage'];
+      hasPreviousPage = parsed['hasPreviousPage'];
       itemsNotifier.value = List.from(list); // chỉ cập nhật bảng
     } catch (e) {
       error = e.toString();
@@ -246,7 +247,7 @@ class _CatalogPageState extends State<CatalogPage> {
             child: Container(
               alignment: Alignment.centerLeft, 
               padding: const EdgeInsets.only(right: 8.0),
-              child: Text(V6Convert.objectToString(v)),
+              child: Text(H.objectToString(v)),
             ),
           ),
         );
@@ -296,19 +297,19 @@ class _CatalogPageState extends State<CatalogPage> {
           // Cột giữa: số trang
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text('Trang $pageIndex'),
+            child: Text('Trang $pageIndex/$totalPages'),
           ),
 
           // Cột phải: điều hướng
           Row(
             children: [
               ElevatedButton(
-                onPressed: pageIndex > 1 && !loading ? _prevPage : null,
+                onPressed: hasPreviousPage && !loading ? _prevPage : null,
                 child: const Text('← Trước'),
               ),
               const SizedBox(width: 8),
               ElevatedButton(
-                onPressed: !loading ? _nextPage : null,
+                onPressed: hasMorePage && !loading ? _nextPage : null,
                 child: const Text('Sau →'),
               ),
             ],

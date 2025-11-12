@@ -18,7 +18,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final userController = TextEditingController(text: 'admin');
   final passController = TextEditingController(text: 'HPC');
-  final baseController = TextEditingController(text: 'BB');
+  //final baseController = TextEditingController(text: 'BB');
   String? responseText;
   bool loading = false;
 
@@ -26,7 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     userController.dispose();
     passController.dispose();
-    baseController.dispose();
+    //baseController.dispose();
     super.dispose();
   }
   
@@ -54,10 +54,10 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     String userName = userController.text.trim();
     String password = passController.text.trim();
-    String madvcs = baseController.text.trim();
+    //String madvcs = baseController.text.trim();
     final url = Uri.parse('http://digitalantiz.net/v6-api/users/login');
     final body = jsonEncode({
-      "UserName": userName, "password": password, "baseUnitCode": madvcs,
+      "UserName": userName, "password": password,// "baseUnitCode": madvcs,
     });
 
     try {
@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // THÀNH CÔNG THỰC SỰ
           AppSession.token = data['access_token'];
           AppSession.userInfo = data;
-          AppSession.baseUnitCode = madvcs;
+          //AppSession.baseUnitCode = madvcs;
           _navigateToHome(); // CHUYỂN HƯỚNG CHỈ KHI THÀNH CÔNG
           return; // Thoát khỏi hàm _login
         }
@@ -114,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
             // ... (Phần UI giữ nguyên) ...
             TextField(controller: userController, decoration: const InputDecoration(labelText: 'UserName')),
             TextField(controller: passController, decoration: const InputDecoration(labelText: 'Password',)),
-            TextField(controller: baseController, decoration: const InputDecoration(labelText: 'BaseUnitCode')),
+            //TextField(controller: baseController, decoration: const InputDecoration(labelText: 'BaseUnitCode')),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: loading ? null : _login,
