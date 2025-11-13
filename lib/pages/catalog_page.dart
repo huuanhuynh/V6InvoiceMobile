@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:v6_invoice_mobile/custom_scroll_behavior.dart';
 import 'package:v6_invoice_mobile/services/api_service.dart';
-import 'package:v6_invoice_mobile/v6_convert.dart';
+import 'package:v6_invoice_mobile/H.dart';
 import '../repository.dart';
 import '../app_session.dart';
 
@@ -78,15 +78,21 @@ class _CatalogPageState extends State<CatalogPage> {
         pageIndex: pageIndex,
         pageSize: pageSize,
       );
-
-      final parsed = apiResponse.data;
-      final list = parsed is List ? parsed : (parsed['items'] ?? parsed['data'] ?? []);
-      //int pageNumber = parsed['pageNumber'];
-      totalPages = parsed['totalPages'];
-      //int totalCount = parsed['totalRows'];
-      hasMorePage = parsed['hasNextPage'];
-      hasPreviousPage = parsed['hasPreviousPage'];
-      itemsNotifier.value = List.from(list); // chỉ cập nhật bảng
+      if (apiResponse.error == null){
+        final parsed = apiResponse.data;
+        final list = parsed is List ? parsed : (parsed['items'] ?? parsed['data'] ?? []);
+        //int pageNumber = parsed['pageNumber'];
+        totalPages = parsed['totalPages'];
+        //int totalCount = parsed['totalRows'];
+        hasMorePage = parsed['hasNextPage'];
+        hasPreviousPage = parsed['hasPreviousPage'];
+        itemsNotifier.value = List.from(list); // chỉ cập nhật bảng
+      }
+      else{
+        error = apiResponse.error;
+        totalPages = 0; hasMorePage = false; hasPreviousPage = false;
+        itemsNotifier.value = []; // chỉ cập nhật bảng
+      }
     } catch (e) {
       error = e.toString();
       itemsNotifier.value = [];

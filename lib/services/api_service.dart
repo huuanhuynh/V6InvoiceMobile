@@ -6,13 +6,13 @@ import 'package:v6_invoice_mobile/models.dart';
 class ApiService {
   static const String baseUrl = 'http://digitalantiz.net';
 
-  static Future<ApiResponse> login({required String username, required String password, required String baseUnitCode,
+  static Future<ApiResponse> login({required String username, required String password
   }) async {
     final url = Uri.parse('$baseUrl/v6-api/users/login');
     final body = jsonEncode({
       'UserName': username,
       'Password': password,
-      'baseUnitCode': baseUnitCode,
+      //'baseUnitCode': baseUnitCode,
     });
 
     final response = await http.post(
@@ -30,11 +30,24 @@ class ApiService {
     return result;
   }
 
+  /// Gọi API lấy danh mục.
+  ///
+  /// Các tham số:
+  /// - [vvar]: Mã danh mục cần truy vấn.
+  /// - [filterValue]: Giá trị người dùng nhập để lọc.
+  /// - [type]: Loại danh mục (ví dụ: 'PRODUCT', 'CUSTOMER').
+  /// - [pageIndex]: Trang hiện tại (bắt đầu từ 1).
+  /// - [pageSize]: Số dòng mỗi trang.
+  ///
+  /// Returns:
+  /// - Một [ApiResponse] chứa kết quả truy vấn danh mục từ API.
+  ///   Nếu lỗi, thuộc tính [ApiResponse.error] sẽ có thông tin lỗi.
   static Future<ApiResponse> catalogs({
     required String vvar,
     required String filterValue,
     required String type,
     required int pageIndex,
+    /// số phần tử mỗi trang.
     required int pageSize,
   }) async {
     final url = Uri.parse('$baseUrl/v6-api/catalogs');

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:v6_invoice_mobile/pages/catalog_page.dart';
-import 'package:v6_invoice_mobile/v6_convert.dart';
+import 'package:v6_invoice_mobile/H.dart';
 import 'package:xml/xml.dart';
 import '../models.dart';
 
@@ -216,7 +216,7 @@ class _ItemEditPageState extends State<ItemEditPage> {
       String? valueField = config != null? config['fvvar'] : fieldKey; // Cần sửa lại, có cấu hình từ catalog để lấy valueField;
       // 3. Lấy giá trị của item đã chọn. 
       // Giả định khóa cần gán là 'fcolumn' (fieldKey)
-      final valueToSet = H.getValueIgnoreCase(selectedItem, valueField!, defaultValue: null);  // bị thiếu V6Lookup Config nên sai trường lấy data ở đây.
+      final valueToSet = H.getValue(selectedItem, valueField!, defaultValue: null);  // bị thiếu V6Lookup Config nên sai trường lấy data ở đây.
 
       if (valueToSet != null) {
         // Chuyển đổi giá trị sang chuỗi (sử dụng logic tương tự V6Convert)

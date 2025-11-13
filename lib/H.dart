@@ -181,19 +181,15 @@ class H {
     return value;
   }
 
-  static dynamic getValueIgnoreCase(
+  /// lấy giá trị trong map với key không phân biệt hoa thường
+  static dynamic getValue(
     Map<String, dynamic> map, 
     String key, {
     dynamic defaultValue,
   }) {
-    // 1. Chuyển key cần tìm về dạng chữ thường để chuẩn hóa
-    final lowerCaseKey = key.toLowerCase();
-
-    // 2. Duyệt qua tất cả các key trong map
+    key = key.toLowerCase();
     for (final mapKey in map.keys) {
-      // 3. Chuyển key của map về dạng chữ thường để so sánh
-      if (mapKey.toLowerCase() == lowerCaseKey) {
-        // 4. Nếu khớp, trả về giá trị gốc của key đó
+      if (mapKey.toLowerCase() == key) {
         return map[mapKey];
       }
     }
