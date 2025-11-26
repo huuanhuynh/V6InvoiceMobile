@@ -57,7 +57,6 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final repo = context.watch<InvoiceRepository>();
     return Scaffold(
       appBar: AppBar(title: const Text('Danh sách Chứng từ')),
       body: Column(

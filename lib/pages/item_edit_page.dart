@@ -1,7 +1,10 @@
+// ignore_for_file: constant_identifier_names
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:v6_invoice_mobile/controls/textboxc.dart';
 import 'package:v6_invoice_mobile/pages/catalog_page.dart';
-import 'package:v6_invoice_mobile/H.dart';
+import 'package:v6_invoice_mobile/h.dart';
 import 'package:xml/xml.dart';
 import '../models.dart';
 
@@ -17,8 +20,8 @@ class ItemEditPage extends StatefulWidget {
 
 class _ItemEditPageState extends State<ItemEditPage> {
   final _formKey = GlobalKey<FormState>();
-  final Map<String, TextEditingController> _controllers = {};
-
+  final Map<String, TextBoxC> _controllers = {};
+  String? statusText;
   late Future<List<Map<String, String>>> _alct1Tables;
   List<Map<String, String>>? _configTables; // cùng phiên bản _alct1Tables
 
@@ -35,9 +38,9 @@ class _ItemEditPageState extends State<ItemEditPage> {
   }
 
   // Sửa chữa: Đặt hàm _getController ở đây
-  TextEditingController _getController(String name) {
+  TextBoxC _getController(String name) {
     // Luôn luôn tạo controller nếu nó chưa tồn tại.
-    final ctrl = _controllers.putIfAbsent(name, () => TextEditingController());
+    final ctrl = _controllers.putIfAbsent(name, () => TextBoxC());
     
     // Xử lý nạp dữ liệu chỉnh sửa ban đầu tại đây (nếu có)
     // Chỉ nạp dữ liệu ban đầu một lần.
@@ -65,7 +68,7 @@ class _ItemEditPageState extends State<ItemEditPage> {
     try {
       xmlString = await rootBundle.loadString(path);
     } catch (e) {      
-      print('Lỗi khi tải file XML từ assets tại $path: $e');
+      statusText = 'Lỗi khi tải file XML từ assets tại $path: $e';
       return []; 
     }
 
@@ -74,10 +77,10 @@ class _ItemEditPageState extends State<ItemEditPage> {
     try {
       document = XmlDocument.parse(xmlString); 
     } on XmlParserException catch (e) {
-      print('Lỗi phân tích cú pháp XML: $e');
+      statusText = ('Lỗi phân tích cú pháp XML: $e');
       return [];
     } catch (e) {
-      print('Lỗi không xác định khi phân tích XML: $e');
+      statusText = ('Lỗi không xác định khi phân tích XML: $e');
       return [];
     }
     
@@ -98,7 +101,7 @@ class _ItemEditPageState extends State<ItemEditPage> {
     return tables;
   }
 
-  // Thêm hàm này vào _ItemEditPageState
+  
   dynamic _getConvertedValue(String fieldKey, String textValue) {
     if (textValue.trim().isEmpty) {
       // Trả về null nếu trống (hoặc 0 nếu là kiểu số, tùy logic nghiệp vụ)
@@ -145,6 +148,12 @@ class _ItemEditPageState extends State<ItemEditPage> {
             // Nếu giá trị là null và đã có key gốc, có thể xóa key đó
             // originalData.remove(fieldKey); // Tùy thuộc vào yêu cầu nghiệp vụ
         }
+
+        // Lấy thêm dữ liệu trong tag
+        final tag = _getController('MA_VT').tag;
+        if (tag != null) {
+          originalData['ten_vt'] = H.getValue(tag, 'ten_vt');
+        }
       }
       
       // 3. Tạo InvoiceItem mới
@@ -157,19 +166,19 @@ class _ItemEditPageState extends State<ItemEditPage> {
     }
   }
 
-  static const String FIELD_SO_LUONG = 'SO_LUONG1';
-    static const String FIELD_DON_GIA = 'GIA_NT21';
-    static const String FIELD_THANH_TIEN = 'TIEN_NT2';
+  static const String FIELD_SO_LUONG1 = 'SO_LUONG1';
+  static const String FIELD_GIA_NT21 = 'GIA_NT21';
+  static const String FIELD_TIEN_NT2 = 'TIEN_NT2';
   // Hàm xử lý sự kiện chung cho tất cả các control
   void _handleFieldChange(String fieldKey, String newValue) {
       
       // Cần đảm bảo rằng chỉ tính toán khi SO_LUONG1 HOẶC GIA_NT21 thay đổi
-      if (fieldKey == FIELD_SO_LUONG || fieldKey == FIELD_DON_GIA) {
+      if (fieldKey == FIELD_SO_LUONG1 || fieldKey == FIELD_GIA_NT21) {
           
           // 1. Lấy giá trị hiện tại của cả hai trường từ controllers
           // (Sử dụng hàm _getConvertedValue an toàn hơn, nhưng ta có thể tạm dùng tryParse đơn giản ở đây)
-          final soLuongController = _getController(FIELD_SO_LUONG);
-          final donGiaController = _getController(FIELD_DON_GIA);
+          final soLuongController = _getController(FIELD_SO_LUONG1);
+          final donGiaController = _getController(FIELD_GIA_NT21);
 
           // 2. Chuyển đổi sang kiểu số để tính toán
           // Sử dụng hàm tryParse an toàn và xử lý dấu thập phân
@@ -180,7 +189,7 @@ class _ItemEditPageState extends State<ItemEditPage> {
           final thanhTien = soLuong * donGia;
 
           // 4. Cập nhật Controller của trường Thành tiền (TIEN_NT2)
-          final thanhTienController = _getController(FIELD_THANH_TIEN);
+          final thanhTienController = _getController(FIELD_TIEN_NT2);
 
           // Định dạng kết quả (ví dụ: làm tròn 2 chữ số thập phân)
           // LƯU Ý: Không cần gọi setState vì việc thay đổi controller đã tự động cập nhật TextFormField
@@ -192,6 +201,7 @@ class _ItemEditPageState extends State<ItemEditPage> {
 
   // Hàm mở CatalogPage và nhận kết quả
   Future<void> _openCatalogLookup(String fieldKey, String fvvar) async {
+    fieldKey = fieldKey.toUpperCase().trim();
     final controller = _getController(fieldKey);
     // Lấy giá trị hiện tại của ô nhập liệu (để lọc trước)
     final currentFilterValue = controller.text.trim();
@@ -209,6 +219,7 @@ class _ItemEditPageState extends State<ItemEditPage> {
 
     // 2. Kiểm tra nếu có item được chọn
     if (selectedItem != null) {
+      controller.tag = selectedItem;
       final config = _configTables?.firstWhere(
         (c) => c['fcolumn']?.trim() == fieldKey,
         orElse: () => {},
@@ -221,9 +232,27 @@ class _ItemEditPageState extends State<ItemEditPage> {
       if (valueToSet != null) {
         // Chuyển đổi giá trị sang chuỗi (sử dụng logic tương tự V6Convert)
         controller.text = H.objectToString(valueToSet);
-
-        // Nếu bạn muốn tự động tính toán sau khi gán (ví dụ: tính thành tiền)
-        // có thể gọi _handleFieldChange(fieldKey, controller.text); ở đây
+        switch (fieldKey) {
+          case 'MA_VT':
+            // Gán thêm tên vật tư từ tag
+            final dvt = H.getValue(selectedItem, 'dvt');
+            if (dvt != null) {
+              final dvtControl = _getController('DVT');
+              dvtControl.text = dvt;
+            }
+            break;
+          case 'MA_THUE_I':
+            // Gán thêm thuế suất từ selectedItem
+            final thueSuat = H.getValue(selectedItem, 'THUE_SUAT');
+            if (thueSuat != null) {
+              final thueSuatControl = _getController('THUE_SUAT_I');
+              thueSuatControl.text = thueSuat;
+            }
+            break;
+        }
+        
+        _handleFieldChange(fieldKey, controller.text);
+        
       }
     }
   }
@@ -244,7 +273,7 @@ class _ItemEditPageState extends State<ItemEditPage> {
         builder: (context, snapshot) {
           // 1. Xử lý trạng thái LỖI (Quan trọng!)
           if (snapshot.hasError) {
-            print('Lỗi FutureBuilder: ${snapshot.error}'); // In lỗi ra console
+            statusText = ('Lỗi FutureBuilder: ${snapshot.error}'); // In lỗi ra console
             return Center(
               child: Text('Đã xảy ra lỗi khi tải dữ liệu: ${snapshot.error}'),
             );
@@ -270,8 +299,7 @@ class _ItemEditPageState extends State<ItemEditPage> {
     );
   }
 
-  // Giả định _getController, _formKey và các import đã được định nghĩa
-  // Giả định: _getController(field) trả về TextEditingController cho field đó
+    
   Widget _buildBody(List<Map<String, String>> tables) {
     // Lọc các trường có visible = 'true' (giả định đã trim() khi load XML)
     final visibleTables = tables.where((t) {

@@ -1,5 +1,7 @@
-import 'package:http/src/response.dart';
-import 'package:v6_invoice_mobile/H.dart';
+// ignore_for_file: non_constant_identifier_names
+
+import 'package:http/http.dart';
+import 'package:v6_invoice_mobile/h.dart';
 
 class ApiResponse{
   dynamic data;
@@ -19,15 +21,15 @@ class InvoiceItem {
   dynamic operator [](String key) => data[key];
   void operator []=(String key, dynamic value) => data[key] = value;
 
-  String? stringOf(String field){
-    if (data.containsKey(field)) return data[field];
-    return null;
+  String stringOf(String field){
+    return H.getValue(data, field, defaultValue: '');
   }
+
   Map<String, dynamic> toMap() => {'id': id, ...data};
+
   double valueOf(String field)
   {
-    if (data.containsKey(field)) return H.objectToDecimal(data[field]);
-    return 0;
+    return H.getDouble(data, field, defaultValue: 0);
   }
 
   InvoiceItem copyWith({String? id, Map<String, dynamic>? data}) {
@@ -38,26 +40,6 @@ class InvoiceItem {
   }
 }
 
-class InvoiceItem_Old {
-  String id;
-  String productCode;
-  String description;
-  double unitPrice;
-  double quantity;
-  double taxRate; // e.g. 0.1 for 10%
-
-  InvoiceItem_Old({
-    required this.id,
-    required this.productCode,
-    this.description = '',
-    required this.unitPrice,
-    required this.quantity,
-    this.taxRate = 0.0,
-  });
-
-  double get lineTotal => unitPrice * quantity;
-  double get taxAmount => lineTotal * taxRate;
-}
 
 class Invoice {
   String id;

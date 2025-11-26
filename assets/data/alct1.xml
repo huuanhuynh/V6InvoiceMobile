@@ -3,7 +3,7 @@
   <Table>
     <stt_forder>1</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>ALVT            </ma_dm>
+    <ma_dm>ALVT</ma_dm>
     <caption>Mã  vật tư</caption>
     <caption2>Item</caption2>
     <loai>1</loai>
@@ -18,7 +18,7 @@
     <visible>true</visible>
     <fvvar>MA_VT</fvvar>
     <fcolumn>MA_VT</fcolumn>
-    <lstatus>1,2                                               </lstatus>
+    <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>0c6d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
     <MA_DM0>0C6D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
@@ -26,7 +26,7 @@
   <Table>
     <stt_forder>3</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>ALDVT           </ma_dm>
+    <ma_dm>ALDVT</ma_dm>
     <caption>Đơn vị tính</caption>
     <caption2>UOM</caption2>
     <loai>1</loai>
@@ -41,7 +41,7 @@
     <visible>true</visible>
     <fvvar>DVT</fvvar>
     <fcolumn>DVT</fcolumn>
-    <lstatus>1,2                                               </lstatus>
+    <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>0d6d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
     <DMETHOD />
@@ -53,7 +53,7 @@
   <Table>
     <stt_forder>4</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>ALKHO           </ma_dm>
+    <ma_dm>ALKHO</ma_dm>
     <caption>Mã kho</caption>
     <caption2>WH</caption2>
     <loai>1</loai>
@@ -68,7 +68,7 @@
     <visible>true</visible>
     <fvvar>MA_KHO</fvvar>
     <fcolumn>MA_KHO_I</fcolumn>
-    <lstatus>1,2                                               </lstatus>
+    <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>0e6d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
     <MA_DM0>0E6D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
@@ -76,7 +76,7 @@
   <Table>
     <stt_forder>11</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>SO_LUONG1       </ma_dm>
+    <ma_dm>SO_LUONG1</ma_dm>
     <caption>Số lượng</caption>
     <caption2>Quantity</caption2>
     <loai>1</loai>
@@ -91,7 +91,7 @@
     <visible>true</visible>
     <fvvar />
     <fcolumn>SO_LUONG1</fcolumn>
-    <lstatus>1,2                                               </lstatus>
+    <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>106d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
     <MA_DM0>106D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
@@ -99,7 +99,7 @@
   <Table>
     <stt_forder>14</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>GIA_NT21        </ma_dm>
+    <ma_dm>GIA_NT21</ma_dm>
     <caption>Đơn giá</caption>
     <caption2>Price</caption2>
     <loai>1</loai>
@@ -114,7 +114,7 @@
     <visible>true</visible>
     <fvvar />
     <fcolumn>GIA_NT21</fcolumn>
-    <lstatus>1,2                                               </lstatus>
+    <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>126d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
     <MA_DM0>126D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
@@ -122,7 +122,7 @@
   <Table>
     <stt_forder>15</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>TIEN_NT2        </ma_dm>
+    <ma_dm>TIEN_NT2</ma_dm>
     <caption>Thành tiền</caption>
     <caption2>Amout</caption2>
     <loai>1</loai>
@@ -137,7 +137,7 @@
     <visible>true</visible>
     <fvvar />
     <fcolumn>TIEN_NT2</fcolumn>
-    <lstatus>1,2                                               </lstatus>
+    <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>136d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
     <MA_DM0>136D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
@@ -145,7 +145,7 @@
   <Table>
     <stt_forder>21</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>ALTHUE          </ma_dm>
+    <ma_dm>ALTHUE</ma_dm>
     <caption>Mã thuế i</caption>
     <caption2>Tax</caption2>
     <loai>3</loai>
@@ -169,7 +169,7 @@
   <Table>
     <stt_forder>25</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>THUE_SUAT_I     </ma_dm>
+    <ma_dm>THUE_SUAT_I</ma_dm>
     <caption>Thuế suất i</caption>
     <caption2>Rate</caption2>
     <loai>1</loai>
@@ -193,7 +193,7 @@
   <Table>
     <stt_forder>36</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>TIEN_NT         </ma_dm>
+    <ma_dm>TIEN_NT</ma_dm>
     <caption>Thành tiền</caption>
     <caption2>Amout</caption2>
     <loai>1</loai>
@@ -208,7 +208,7 @@
     <visible>false</visible>
     <fvvar />
     <fcolumn>TIEN_NT</fcolumn>
-    <lstatus>1,2                                               </lstatus>
+    <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>1c6d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
     <MA_DM0>1C6D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
@@ -216,7 +216,7 @@
   <Table>
     <stt_forder>38</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>THUE_NT         </ma_dm>
+    <ma_dm>THUE_NT</ma_dm>
     <caption>Thuế NT</caption>
     <caption2>Tax amount FC</caption2>
     <loai>1</loai>
@@ -239,7 +239,7 @@
   <Table>
     <stt_forder>42</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>THUE            </ma_dm>
+    <ma_dm>THUE</ma_dm>
     <caption>Thuế</caption>
     <caption2>Tax amount</caption2>
     <loai>1</loai>
@@ -262,7 +262,7 @@
   <Table>
     <stt_forder>50</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>CK              </ma_dm>
+    <ma_dm>CK</ma_dm>
     <caption>Chiết khấu</caption>
     <caption2>Amout</caption2>
     <loai>1</loai>
@@ -277,7 +277,7 @@
     <visible>false</visible>
     <fvvar />
     <fcolumn>CK</fcolumn>
-    <lstatus>1,2                                               </lstatus>
+    <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>256d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
     <MA_DM0>256D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
@@ -285,7 +285,7 @@
   <Table>
     <stt_forder>51</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>TIEN            </ma_dm>
+    <ma_dm>TIEN</ma_dm>
     <caption>Thành tiền</caption>
     <caption2>Amout</caption2>
     <loai>1</loai>
@@ -300,7 +300,7 @@
     <visible>false</visible>
     <fvvar />
     <fcolumn>TIEN</fcolumn>
-    <lstatus>1,2                                               </lstatus>
+    <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>266d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
     <MA_DM0>266D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
@@ -308,7 +308,7 @@
   <Table>
     <stt_forder>52</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>ALDVT           </ma_dm>
+    <ma_dm>ALDVT</ma_dm>
     <caption>Đơn vị tính</caption>
     <caption2>UOM</caption2>
     <loai>1</loai>
@@ -323,7 +323,7 @@
     <visible>false</visible>
     <fvvar />
     <fcolumn>DVT</fcolumn>
-    <lstatus>1,2                                               </lstatus>
+    <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>1d6d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
     <MA_DM0>1D6D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
@@ -331,7 +331,7 @@
   <Table>
     <stt_forder>68</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>ALSP            </ma_dm>
+    <ma_dm>ALSP</ma_dm>
     <caption>Mã Sp</caption>
     <caption2>Product code</caption2>
     <loai>3</loai>
@@ -346,7 +346,7 @@
     <visible>false</visible>
     <fvvar>MA_VT</fvvar>
     <fcolumn>MA_SP</fcolumn>
-    <lstatus>1,2                                               </lstatus>
+    <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>fd6c8ad8-8275-e611-a4ab-3085a9b1d695</UID>
     <MA_DM0>FD6C8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>

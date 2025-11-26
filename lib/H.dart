@@ -1,9 +1,8 @@
-import 'dart:math';
 import 'package:intl/intl.dart';
 
-/// Lớp hỗ trợ chuyển đổi và định dạng dữ liệu tương tự như bản C#
+/// Lớp hỗ trợ chuyển đổi và định dạng dữ liệu
 class H {
-  static const String systemDecimalSymbol = '.'; // mặc định hệ thống
+  static const String systemDecimalSymbol = '.';
   static const _defaultDateFormat = 'dd/MM/yyyy';
 
   /// Chuyển số thành chuỗi có định dạng
@@ -198,11 +197,15 @@ class H {
     return defaultValue;
   }
 
-  Map<String, dynamic> normalizeMapKeys(Map<String, dynamic> originalMap) {
+  static double getDouble(Map<String, dynamic> map, String key, {double defaultValue = 0}) {
+    final value = getValue(map, key, defaultValue: defaultValue);
+    return objectToDecimal(value);
+  }
+
+  static Map<String, dynamic> normalizeMapKeys(Map<String, dynamic> originalMap) {
     final Map<String, dynamic> normalizedMap = {};
     
     originalMap.forEach((key, value) {
-      // Thêm key đã chuyển thành chữ thường vào Map mới
       normalizedMap[key.toLowerCase()] = value;
     });
     

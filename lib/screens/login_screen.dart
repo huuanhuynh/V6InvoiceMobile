@@ -2,7 +2,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:v6_invoice_mobile/services/api_service.dart';
-import 'package:v6_invoice_mobile/H.dart';
+import 'package:v6_invoice_mobile/h.dart';
 import '../app_session.dart';
 import '../pages/invoice_page.dart'; // Import InvoicePage để dùng routeName
 
@@ -19,7 +19,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final userController = TextEditingController(text: 'admin');
   final passController = TextEditingController(text: 'HPC');
-  //final baseController = TextEditingController(text: 'BB');
   String? statusText;
   bool loading = false;
 
@@ -31,23 +30,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
   
-  // Hàm chuyển hướng sau khi đăng nhập thành công
-  void _navigateToHome() {
-    if (mounted) {
-      // Dùng InvoicePage.routeName thay cho '/home' để đồng bộ
-      // Nếu '/home' trong main.dart là InvoicePage, bạn vẫn có thể dùng '/home'
-      Navigator.pushReplacementNamed(context, InvoicePage.routeName); 
-    }
-  }
-  
-  // Logic đăng nhập giả để kiểm tra giao diện (có thể xóa khi deploy)
-  void _fakeLogin() {
-      // Chỉ chạy mã giả này khi cần test UI
-      AppSession.token = 'fake_access_token';
-      AppSession.userInfo = {'access_token' : AppSession.token};
-      _navigateToHome();
-  }
-
   Future<void> _loadAndSelectCatalog(BuildContext context) async {
     // Đặt giá trị mặc định cho các tham số catalogs. Cần điều chỉnh theo thực tế.
     const String fvvar = 'MA_DVCS'; // Ví dụ: biến API để lấy danh sách đơn vị
@@ -81,15 +63,11 @@ class _LoginScreenState extends State<LoginScreen> {
         });
 
         if (listItems.isNotEmpty) {
-          // **HIỂN THỊ DANH SÁCH VÀ CHỜ NGƯỜI DÙNG CHỌN**
           final selectedItem = await showCatalogSelectionDialog(context, listItems);
-
+          
           if (selectedItem != null) {
-            // Lưu item đã chọn vào AppSession (ví dụ: AppSession.selectedUnit = selectedItem)
-            // Tùy thuộc vào cấu trúc item, bạn cần lưu thông tin cần thiết.
-            AppSession.madvcs = H.getValue(selectedItem, 'Ma_DVCs'); // Cần xác định key
-            
-            // Sau khi chọn thành công, mới chuyển hướng về Home
+            AppSession.madvcs = H.getValue(selectedItem, 'MA_DVCS');
+            // Chuyển hướng đến trang chính sau khi chọn đơn vị
             if (mounted) {
               Navigator.pushReplacementNamed(context, InvoicePage.routeName); 
             }
@@ -148,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
               itemBuilder: (context, index) {
                 final item = catalogList[index];
                 // Giả định item có trường 'TenDonVi' hoặc 'Name'
-                final itemName = H.getValue(item,'MA_DVCS') + ' ' + H.getValue(item, 'TEN_DVCS');
+                final itemName = '${H.getValue(item, 'MA_DVCS')} ${H.getValue(item, 'TEN_DVCS')}';
 
                 return ListTile(
                   title: Text(itemName),
@@ -192,17 +170,16 @@ class _LoginScreenState extends State<LoginScreen> {
       if (apiResponse.response != null && apiResponse.response!.statusCode == 200) {
         final data = jsonDecode(apiResponse.response!.body);
         if (data['access_token'] != null) {
-          // THÀNH CÔNG THỰC SỰ
           AppSession.token = data['access_token'];
           AppSession.userInfo = data;
           AppSession.madvcs = 'BB';
           _loadAndSelectCatalog(context);
-          //_navigateToHome(); // CHUYỂN HƯỚNG CHỈ KHI THÀNH CÔNG
-          return; // Thoát khỏi hàm _login
         }
+      } else {
+        setState(() {
+          statusText = 'Đăng nhập thất bại: ${apiResponse.response?.statusCode}';
+        });
       }
-      
-      // _fakeLogin(); 
 
     } catch (e) {
       setState(() {

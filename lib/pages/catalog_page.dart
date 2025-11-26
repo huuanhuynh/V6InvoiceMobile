@@ -1,13 +1,9 @@
-//lib/pages/catalog_page.dart
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:v6_invoice_mobile/custom_scroll_behavior.dart';
 import 'package:v6_invoice_mobile/services/api_service.dart';
-import 'package:v6_invoice_mobile/H.dart';
-import '../repository.dart';
-import '../app_session.dart';
+import 'package:v6_invoice_mobile/h.dart';
 
 class CatalogPage extends StatefulWidget {
   final String fvvar;

@@ -1,8 +1,12 @@
 // lib/pages/invoice_page.dart
+// dự định: khởi tại 3 danh sách controller cho 3 tab các thông tin chung, khách hàng, ghi chú, sau đó build theo 3 danh sách đó.
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:v6_invoice_mobile/controls/textboxc.dart';
+import 'package:v6_invoice_mobile/h.dart';
 import '../models.dart';
 import '../repository.dart';
 import 'item_edit_page.dart';
@@ -27,7 +31,9 @@ class InvoicePage extends StatefulWidget {
 
 
 // Định nghĩa các key cho Map Controllers
-enum InvoiceField { number, customerName, customerCode, notes }
+enum Tab0Field { so_ct, ngay_ct, ma_kh, ma_sonb }
+enum Tab1Field { ten_kh, ghi_chu }
+enum Tab2Field { dien_giai }
 enum InvoiceStatus { A, B, C } // Giả định các trạng thái
 
 class _InvoicePageState extends State<InvoicePage>
@@ -38,15 +44,18 @@ class _InvoicePageState extends State<InvoicePage>
   final _formKey = GlobalKey<FormState>();
 
   // controllers cho phần đầu
-  final Map<InvoiceField, TextEditingController> _controllers = {
-    InvoiceField.number: TextEditingController(),
-    InvoiceField.customerName: TextEditingController(),
-    InvoiceField.customerCode: TextEditingController(), // Mã KH
-    InvoiceField.notes: TextEditingController(),
+  final Map<Tab0Field, TextBoxC> _tab0Controls = {
+    Tab0Field.so_ct: TextBoxC(),
+    Tab0Field.ma_kh: TextBoxC(),
+    Tab0Field.ma_sonb: TextBoxC(),
   };
-  //final _ctrlNumber = TextEditingController();
-  //final _ctrlCustomer = TextEditingController();
-  //final _ctrlNotes = TextEditingController();
+  final Map<Tab1Field, TextBoxC> _tab1Controls = {
+    Tab1Field.ten_kh: TextBoxC(),
+    Tab1Field.ghi_chu: TextBoxC(),
+  };
+  final Map<Tab2Field, TextBoxC> _tab2Controls = {
+    Tab2Field.dien_giai: TextBoxC(),
+  };
   DateTime? _date;
   InvoiceStatus _status = InvoiceStatus.A; // Trạng thái chứng từ
 
@@ -71,15 +80,11 @@ class _InvoicePageState extends State<InvoicePage>
       mode = InvoiceMode.edit;
     }
 
-    //_ctrlNumber.text = invoice.number;
-    //_ctrlCustomer.text = invoice.customerName;
-    //_ctrlNotes.text = invoice.notes;
-    // Khởi tạo giá trị cho Map Controllers
-    _controllers[InvoiceField.number]!.text = invoice.number;
-    _controllers[InvoiceField.customerName]!.text = invoice.customerName;
-    _controllers[InvoiceField.notes]!.text = invoice.notes;
+    _tab0Controls[Tab0Field.so_ct]!.text = invoice.number;
+    _tab1Controls[Tab1Field.ten_kh]!.text = invoice.customerName;
+    _tab1Controls[Tab1Field.ghi_chu]!.text = invoice.notes;
     // Gán giá trị giả định cho Mã khách hàng (vì chưa có trong Invoice model gốc)
-    _controllers[InvoiceField.customerCode]!.text = 'CUST001'; 
+    _tab0Controls[Tab0Field.ma_kh]!.text = 'CUST001'; 
     
     _date = invoice.date;
   }
@@ -87,7 +92,7 @@ class _InvoicePageState extends State<InvoicePage>
   @override
   void dispose() {
     _tabController.dispose();
-    for (var ctrl in _controllers.values) {
+    for (var ctrl in _tab0Controls.values) {
       ctrl.dispose();
     }
     
@@ -101,9 +106,9 @@ class _InvoicePageState extends State<InvoicePage>
     // invoice.notes = _ctrlNotes.text;
     
     // Cập nhật lại invoice object
-    invoice.number = _controllers[InvoiceField.number]!.text;
-    invoice.customerName = _controllers[InvoiceField.customerName]!.text;
-    invoice.notes = _controllers[InvoiceField.notes]!.text;
+    invoice.number = _tab0Controls[Tab0Field.so_ct]!.text;
+    invoice.customerName = _tab1Controls[Tab1Field.ten_kh]!.text;
+    invoice.notes = _tab1Controls[Tab1Field.ghi_chu]!.text;
     invoice.date = _date ?? invoice.date;
     // Bổ sung: Gán trạng thái và Mã KH (nếu có trong model)
     // invoice.status = _status.name; 
@@ -122,34 +127,27 @@ class _InvoicePageState extends State<InvoicePage>
   }
 
   // Thêm hàm giả này để mô phỏng hành động Lookup
-void _fakeLookup(InvoiceField fieldKey, String fvvar) async {
+void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
   // Lấy controller tương ứng
-  final controller = _controllers[fieldKey]!;
+  //final controller = _tab0Controls[fieldKey]!;
   
   // Dữ liệu giả định sẽ được trả về từ CatalogPage
   final Map<String, dynamic> fakeSelectedItem = {
     "MA_KH": "KH007",
     "TEN_KH": "Công ty TNHH Phần Mềm V6",
     "SO_CT": "INV2025/001",
-    // Giả định khóa cần gán là 'MA_KH' hoặc 'SO_CT' tùy vào fieldKey
-    // Nếu fieldKey là 'customerCode' (MA_KH), ta lấy 'MA_KH'
-    // Nếu fieldKey là 'number' (SO_CT), ta lấy 'SO_CT'
+    "MA_SONB": "NB123456",
   };
 
-  // Chọn key tương ứng để gán giá trị
-  final keyToAssign = fieldKey == InvoiceField.customerCode ? "MA_KH" : 
-                      fieldKey == InvoiceField.number ? "SO_CT" : null;
-
-  if (keyToAssign != null) {
-    final valueToSet = fakeSelectedItem[keyToAssign];
+  if (fieldKey != '') {
+    final valueToSet = H.getValue(fakeSelectedItem, fieldKey, defaultValue: '');
 
     if (valueToSet != null) {
-      // Gán giá trị vào controller mà không cần setState()
       controller.text = valueToSet.toString();
       
       // Nếu có controller khác liên quan (ví dụ: gán tên khách hàng sau khi chọn mã)
-      if (fieldKey == InvoiceField.customerCode) {
-         _controllers[InvoiceField.customerName]!.text = fakeSelectedItem["TEN_KH"].toString();
+      if (fieldKey.toUpperCase() == "MA_KH") {
+         _tab1Controls[Tab1Field.ten_kh]!.text = H.getValue(fakeSelectedItem, 'TEN_KH', defaultValue: '').toString();
       }
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -360,12 +358,12 @@ void _fakeLookup(InvoiceField fieldKey, String fvvar) async {
                                 // Cột 2: Mã nội bộ (Giả sử là MA_NB)
                                 Expanded(
                                   child: TextFormField(
-                                    controller: _controllers[InvoiceField.number],
+                                    controller: _tab0Controls[Tab0Field.ma_sonb],
                                     decoration: InputDecoration(
                                       suffixIcon: IconButton(
                                         icon: Icon(Icons.search),
                                         onPressed: mode != InvoiceMode.view 
-                                          ? () => _fakeLookup(InvoiceField.customerCode, 'DM_KH') 
+                                          ? () => _fakeLookup(Tab0Field.ma_sonb.toString(), 'MA_SONB', _tab0Controls[Tab0Field.ma_sonb]!) 
                                           : null,
                                       ) , // lookup icon
                                       labelText: 'Mã nội bộ'
@@ -384,7 +382,7 @@ void _fakeLookup(InvoiceField fieldKey, String fvvar) async {
                                 // Cột 1: Mã Khách hàng (Thêm mới)
                                 Expanded(
                                   child: TextFormField(
-                                    controller: _controllers[InvoiceField.customerCode],
+                                    controller: _tab0Controls[Tab0Field.ma_kh],
                                     decoration: const InputDecoration(labelText: 'Mã Khách hàng'),
                                     enabled: mode != InvoiceMode.view,
                                   ),
@@ -393,7 +391,7 @@ void _fakeLookup(InvoiceField fieldKey, String fvvar) async {
                                 // Cột 2: Số chứng từ
                                 Expanded(
                                   child: TextFormField(
-                                    controller: _controllers[InvoiceField.number],
+                                    controller: _tab0Controls[Tab0Field.so_ct],
                                     decoration: const InputDecoration(labelText: 'Số chứng từ'),
                                     enabled: mode != InvoiceMode.view,
                                     validator: (v) => v == null || v.isEmpty ? 'Yêu cầu' : null,
@@ -405,8 +403,8 @@ void _fakeLookup(InvoiceField fieldKey, String fvvar) async {
 
                             // Hàng 3: Diễn giải dài
                             TextFormField(
-                              controller: _controllers[InvoiceField.notes],
-                              decoration: const InputDecoration(labelText: 'Diễn giải/Ghi chú'),
+                              controller: _tab1Controls[Tab1Field.ghi_chu],
+                              decoration: const InputDecoration(labelText: 'Ghi chú'),
                               enabled: mode != InvoiceMode.view,
                               maxLines: 2, // Cho phép nhiều dòng
                             ),
@@ -434,18 +432,18 @@ void _fakeLookup(InvoiceField fieldKey, String fvvar) async {
                       SingleChildScrollView(
                         padding: const EdgeInsets.all(8),
                         child: TextFormField(
-                          controller: _controllers[InvoiceField.customerName],
+                          controller: _tab1Controls[Tab1Field.ten_kh],
                           decoration: const InputDecoration(labelText: 'Tên Khách hàng'),
                           enabled: mode != InvoiceMode.view,
                         ),
                       ),
-                      // Tab Ghi chú
+                      // Tab diễn giải
                       SingleChildScrollView(
                         padding: const EdgeInsets.all(8),
                         child: TextFormField(
-                          //controller: _ctrlNotes,
+                          controller: _tab2Controls[Tab2Field.dien_giai],
                           decoration:
-                              const InputDecoration(labelText: 'Ghi chú'),
+                              const InputDecoration(labelText: 'Diễn giải'),
                           enabled: mode != InvoiceMode.view,
                           maxLines: 4,
                         ),
@@ -502,7 +500,7 @@ void _fakeLookup(InvoiceField fieldKey, String fvvar) async {
                                   builder: (_) => AlertDialog(
                                     title: Text('Chi tiết ${it['MA_VT']}'),
                                     content: Text(
-                                        'Mô tả: ${it.stringOf("GHI_CHU")}\nĐơn giá: ${it.valueOf("GIA_NT21")}\nSố lượng: ${it.valueOf("SO_LUONG1")}\nThuế: ${(it.valueOf("THUE_SUAT") * 100).toStringAsFixed(0)}%'),
+                                        'Mô tả: ${it.stringOf("TEN_VT")}\nĐơn giá: ${it.valueOf("GIA_NT21")}\nSố lượng: ${it.valueOf("SO_LUONG1")}\nThuế: ${(it.valueOf("THUE_SUAT") * 100).toStringAsFixed(0)}%'),
                                     actions: [
                                       TextButton(
                                           onPressed: () =>
