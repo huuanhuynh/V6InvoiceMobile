@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:v6_invoice_mobile/controls/textboxc.dart';
+import 'package:v6_invoice_mobile/controls/v6_vvar_textbox.dart';
 import 'package:v6_invoice_mobile/pages/catalog_page.dart';
 import 'package:v6_invoice_mobile/h.dart';
 import 'package:xml/xml.dart';
@@ -170,10 +171,10 @@ class _ItemEditPageState extends State<ItemEditPage> {
   static const String FIELD_GIA_NT21 = 'GIA_NT21';
   static const String FIELD_TIEN_NT2 = 'TIEN_NT2';
   // Hàm xử lý sự kiện chung cho tất cả các control
-  void _handleFieldChange(String fieldKey, String newValue) {
-      
+  void _handleFieldChange(V6VvarTextBox sender , String newValue) {
+    
       // Cần đảm bảo rằng chỉ tính toán khi SO_LUONG1 HOẶC GIA_NT21 thay đổi
-      if (fieldKey == FIELD_SO_LUONG1 || fieldKey == FIELD_GIA_NT21) {
+      if (sender.fieldKey == FIELD_SO_LUONG1 || sender.fieldKey == FIELD_GIA_NT21) {
           
           // 1. Lấy giá trị hiện tại của cả hai trường từ controllers
           // (Sử dụng hàm _getConvertedValue an toàn hơn, nhưng ta có thể tạm dùng tryParse đơn giản ở đây)
@@ -199,40 +200,9 @@ class _ItemEditPageState extends State<ItemEditPage> {
       // Bất kỳ logic xử lý chung nào khác (ví dụ: tính thuế, kiểm tra giới hạn) sẽ được thêm vào đây.
   }
 
-  // Hàm mở CatalogPage và nhận kết quả
-  Future<void> _openCatalogLookup(String fieldKey, String fvvar) async {
-    fieldKey = fieldKey.toUpperCase().trim();
-    final controller = _getController(fieldKey);
-    // Lấy giá trị hiện tại của ô nhập liệu (để lọc trước)
-    final currentFilterValue = controller.text.trim();
-    // 1. Mở CatalogPage và đợi kết quả (selectedItem)
-    final selectedItem = await Navigator.push<Map<String, dynamic>>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CatalogPage(
-          fvvar: fvvar, // Mã danh mục cần lookup
-          type: '2',    // Loại lookup (ví dụ)
-          filterValue: currentFilterValue.isNotEmpty ? currentFilterValue : null,
-        ),
-      ),
-    );
-
-    // 2. Kiểm tra nếu có item được chọn
-    if (selectedItem != null) {
-      controller.tag = selectedItem;
-      final config = _configTables?.firstWhere(
-        (c) => c['fcolumn']?.trim() == fieldKey,
-        orElse: () => {},
-      );
-      String? valueField = config != null? config['fvvar'] : fieldKey; // Cần sửa lại, có cấu hình từ catalog để lấy valueField;
-      // 3. Lấy giá trị của item đã chọn. 
-      // Giả định khóa cần gán là 'fcolumn' (fieldKey)
-      final valueToSet = H.getValue(selectedItem, valueField!, defaultValue: null);  // bị thiếu V6Lookup Config nên sai trường lấy data ở đây.
-
-      if (valueToSet != null) {
-        // Chuyển đổi giá trị sang chuỗi (sử dụng logic tương tự V6Convert)
-        controller.text = H.objectToString(valueToSet);
-        switch (fieldKey) {
+  void _handleFieldLooked(V6VvarTextBox sender, Map<String, dynamic> selectedItem) {
+    try{
+      switch (sender.fieldKey.toUpperCase().trim()) {
           case 'MA_VT':
             // Gán thêm tên vật tư từ tag
             final dvt = H.getValue(selectedItem, 'dvt');
@@ -250,13 +220,15 @@ class _ItemEditPageState extends State<ItemEditPage> {
             }
             break;
         }
-        
-        _handleFieldChange(fieldKey, controller.text);
-        
-      }
+    } catch (e) {
+      statusText = 'Lỗi khi xử lý lookup cho trường ${sender.fieldKey}: $e';
+    }
+    finally {
+      // Gọi hàm xử lý thay đổi để cập nhật các trường liên quan
+      _handleFieldChange(sender, sender.controller.text);
     }
   }
-
+  
   @override
   Widget build(BuildContext context) {
     final editing = widget.item != null;
@@ -314,56 +286,40 @@ class _ItemEditPageState extends State<ItemEditPage> {
       child: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          ...visibleTables.map((col) {
-            final label = col['caption']?.trim() ?? '';
-            final field = col['fcolumn']?.trim() ?? '';
-            final ftype = col['ftype']?.trim() ?? ''; // Ví dụ: N2, N4, C0
-            final isRequired = (col['notempty']?.toLowerCase().trim() ?? 'false') == 'true';
-            final fvvar = col['fvvar']?.trim();
+          ...visibleTables.map((configMap) {
+            final label = configMap['caption']?.trim() ?? '';
+            final field = configMap['fcolumn']?.trim() ?? '';
+            final ftype = configMap['ftype']?.trim() ?? ''; // Ví dụ: N2, N4, C0
+            final isRequired = (configMap['notempty']?.toLowerCase().trim() ?? 'false') == 'true';
+            final fvvar = configMap['fvvar']?.trim();
             
             final controller = _getController(field);
             // XÁC ĐỊNH ICON TRA CỨU
-            final lookupIcon = (fvvar != null && fvvar.isNotEmpty) 
-                ? IconButton(
-                    icon: const Icon(Icons.search),
-                    onPressed: () => _openCatalogLookup(field, fvvar),
-                  ) 
-                : null; // Không hiển thị nếu không có fvvar
-
-            // Xác định kiểu bàn phím: Bất kỳ ftype nào bắt đầu bằng 'N' (Number)
-            final isNumeric = ftype.startsWith('N');
+            // final lookupIcon = (fvvar != null && fvvar.isNotEmpty) 
+            //     ? IconButton(
+            //         icon: const Icon(Icons.search),
+            //         onPressed: () => _openCatalogLookup(field, fvvar),
+            //       ) 
+            //     : null; // Không hiển thị nếu không có fvvar
+            // final isNumeric = ftype.startsWith('N');
             
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
-              child: TextFormField(
+              child: V6VvarTextBox(
+                label: label,
+                fieldKey: field,
+                ftype: ftype,
+                vvar: fvvar,
+                isRequired: isRequired,
                 controller: controller,
-                onChanged: (value) => _handleFieldChange(field, value),
-                decoration: InputDecoration(
-                  labelText: label,
-                  border: const OutlineInputBorder(),
-                  suffixIcon: lookupIcon, // lookup icon
-                  suffixText: isRequired ? '*' : null, // Hiển thị (*) nếu là trường bắt buộc
-                  suffixStyle: isRequired ? const TextStyle(color: Colors.red) : null,// Thêm một chút màu sắc cho trường bắt buộc nếu cần
-                ),
                 
-                // SỬA CHỮA: Dùng ftype để xác định kiểu bàn phím
-                keyboardType: isNumeric
-                    ? const TextInputType.numberWithOptions(decimal: true)
-                    : TextInputType.text,
-                    
-                // SỬA CHỮA: Dùng trường 'notempty' để quyết định validation
-                validator: isRequired
-                    ? (v) {
-                        if (v == null || v.trim().isEmpty) {
-                          return 'Trường $label không được bỏ trống.';
-                        }
-                        // Thêm validation kiểu số nếu là trường số
-                        if (isNumeric && double.tryParse(v) == null) {
-                          return 'Trường $label phải là số.';
-                        }
-                        return null;
-                      }
-                    : null, // Nếu không bắt buộc, trả về null (không validation)
+                // Truyền toàn bộ cấu hình để V6LookupField có thể tự tìm valueField (tùy vào logic V6)
+                // Hoặc chỉ cần truyền configMap:
+                configTables: configMap,
+                
+                // Gọi hàm xử lý thay đổi giá trị và tính toán
+                onChanged: _handleFieldChange,
+                onLooked: _handleFieldLooked,
               ),
             );
           }).toList(), // Chuyển sang List để dùng trong children

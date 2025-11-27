@@ -135,7 +135,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                   return ListTile(
                     title: Text(inv.number),
                     subtitle: Text('${inv.customerName} • ${inv.date.toIso8601String().split('T')[0]}'),
-                    trailing: Text(inv.totalPayable.toStringAsFixed(0)),
+                    trailing: Text(inv.T_TT.toStringAsFixed(0)),
                     onTap: () async {
                       await Navigator.push(
                         context,

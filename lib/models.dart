@@ -58,14 +58,21 @@ class Invoice {
     List<InvoiceItem>? items,
   }) : items = items ?? [];
 
-  double get T_SL =>
-      items.fold(0.0, (p, e) => p + e.valueOf('SO_LUONG'));
+  double T_SL1 = 0;
+      //=> items.fold(0.0, (p, e) => p + e.valueOf('SO_LUONG'));
 
-  double get T_TIEN2 =>
-      items.fold(0.0, (p, e) => p + e.valueOf('TIEN2'));
+  double T_TIEN2 = 0;
 
-  double get T_THUE =>
-      items.fold(0.0, (p, e) => p + e.valueOf('THUE'));
+  double T_THUE = 0;
 
-  double get totalPayable => T_TIEN2 + T_THUE;
+  double T_TT = 0;
+
+  void calculateTotals() {
+    // In this simple model, totals are calculated on-the-fly using getters.
+    // If you need to store totals, you can implement that logic here.
+    T_SL1 = items.fold(0.0, (p, e) => p + e.valueOf('SO_LUONG1'));
+    T_TIEN2 = items.fold(0.0, (p, e) => p + e.valueOf('TIEN2'));
+    T_THUE = items.fold(0.0, (p, e) => p + e.valueOf('THUE'));
+    T_TT = T_TIEN2 + T_THUE;
+  }
 }

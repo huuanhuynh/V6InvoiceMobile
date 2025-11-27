@@ -22,10 +22,10 @@ class CatalogPage extends StatefulWidget {
 }
 
 class _CatalogPageState extends State<CatalogPage> {
-  int pageIndex = 1; int totalPages = 0;
+  int pageIndex = 1; int totalPages = 0; int totalRows = 0;
   int pageSize = 20;
   bool hasMorePage = false; bool hasPreviousPage = false;
-  List<dynamic> items = [];
+  //List<dynamic> items = [];
   Map<String, dynamic>? selectedItem;
   bool loading = false;
   String? error;
@@ -79,7 +79,7 @@ class _CatalogPageState extends State<CatalogPage> {
         final list = parsed is List ? parsed : (parsed['items'] ?? parsed['data'] ?? []);
         //int pageNumber = parsed['pageNumber'];
         totalPages = parsed['totalPages'];
-        //int totalCount = parsed['totalRows'];
+        totalRows = parsed['totalRows'];
         hasMorePage = parsed['hasNextPage'];
         hasPreviousPage = parsed['hasPreviousPage'];
         itemsNotifier.value = List.from(list); // chỉ cập nhật bảng
@@ -299,7 +299,7 @@ class _CatalogPageState extends State<CatalogPage> {
           // Cột giữa: số trang
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text('Trang $pageIndex/$totalPages'),
+            child: Text('${itemsNotifier.value.length} dòng. Trang $pageIndex/$totalPages của $totalRows dòng'),
           ),
 
           // Cột phải: điều hướng

@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:v6_invoice_mobile/controls/textboxc.dart';
+import 'package:v6_invoice_mobile/controls/v6_vvar_textbox.dart';
 import 'package:v6_invoice_mobile/h.dart';
 import '../models.dart';
 import '../repository.dart';
@@ -126,41 +127,10 @@ class _InvoicePageState extends State<InvoicePage>
         .showSnackBar(const SnackBar(content: Text('Đã lưu chứng từ')));
   }
 
-  // Thêm hàm giả này để mô phỏng hành động Lookup
-void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
-  // Lấy controller tương ứng
-  //final controller = _tab0Controls[fieldKey]!;
-  
-  // Dữ liệu giả định sẽ được trả về từ CatalogPage
-  final Map<String, dynamic> fakeSelectedItem = {
-    "MA_KH": "KH007",
-    "TEN_KH": "Công ty TNHH Phần Mềm V6",
-    "SO_CT": "INV2025/001",
-    "MA_SONB": "NB123456",
-  };
-
-  if (fieldKey != '') {
-    final valueToSet = H.getValue(fakeSelectedItem, fieldKey, defaultValue: '');
-
-    if (valueToSet != null) {
-      controller.text = valueToSet.toString();
-      
-      // Nếu có controller khác liên quan (ví dụ: gán tên khách hàng sau khi chọn mã)
-      if (fieldKey.toUpperCase() == "MA_KH") {
-         _tab1Controls[Tab1Field.ten_kh]!.text = H.getValue(fakeSelectedItem, 'TEN_KH', defaultValue: '').toString();
-      }
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lookup giả lập thành công: ${valueToSet.toString()}')),
-      );
-    }
-  }
-}
-
   // Hàm xử lý Scan QR MỚI
   void _scanQR() async {
     // Hành động giả lập: Mở trang quét QR (có thể là một Dialog/Page riêng)
-    // Thay thế bằng gói `qr_code_scanner` hoặc `mobile_scanner` thực tế
+    // Thay thế bằng hoặc `mobile_scanner` thực tế
     final qrData = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -241,6 +211,7 @@ void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
     if (item != null) {
       setState(() {
         invoice.items.add(item);
+        invoice.calculateTotals();
       });
       //context.read<InvoiceRepository>().addItem(invoice.id, item);
     }
@@ -258,7 +229,7 @@ void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
         if (index != -1) {
           // Thay thế item cũ bằng item mới (result)
           invoice.items[index] = result; 
-          
+          invoice.calculateTotals();
           // Hoặc nếu bạn muốn đảm bảo tính bất biến tốt hơn (Immutable approach):
           /*
           _invoice = _invoice.copyWith(
@@ -274,9 +245,18 @@ void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
   }
 
   void _deleteItem(InvoiceItem item) {
-    context.read<InvoiceRepository>().deleteItem(invoice.id, item.id);
+    //context.read<InvoiceRepository>().deleteItem(invoice.id, item.id);
+    setState(() {
+      invoice.items.removeWhere((it) => it.id == item.id);
+      invoice.calculateTotals();
+    });
   }
 
+  void _calSummary() {
+    setState(() {
+      invoice.calculateTotals();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -348,8 +328,8 @@ void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
                                 Expanded(
                                   child: InkWell(
                                     onTap: mode == InvoiceMode.view ? null : _pickDate,
-                                    child: InputDecorator(
-                                      decoration: const InputDecoration(labelText: 'Ngày chứng từ'),
+                                    child: InputDecorator(                                      
+                                      decoration: const InputDecoration(labelText: 'Ngày chứng từ', border: OutlineInputBorder()),
                                       child: Text(_date?.toIso8601String().split('T').first ?? ''),
                                     ),
                                   ),
@@ -357,19 +337,17 @@ void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
                                 const SizedBox(width: 12),
                                 // Cột 2: Mã nội bộ (Giả sử là MA_NB)
                                 Expanded(
-                                  child: TextFormField(
-                                    controller: _tab0Controls[Tab0Field.ma_sonb],
-                                    decoration: InputDecoration(
-                                      suffixIcon: IconButton(
-                                        icon: Icon(Icons.search),
-                                        onPressed: mode != InvoiceMode.view 
-                                          ? () => _fakeLookup(Tab0Field.ma_sonb.toString(), 'MA_SONB', _tab0Controls[Tab0Field.ma_sonb]!) 
-                                          : null,
-                                      ) , // lookup icon
-                                      labelText: 'Mã nội bộ'
-                                    ),
+                                  child:
+                                  V6VvarTextBox(label: 'Mã nội bộ', fieldKey: 'MA_SONB', ftype: 'ftype', controller: _tab0Controls[Tab0Field.ma_sonb]!,
+                                    vvar: 'MA_SONB',
+                                    isRequired: true,
                                     enabled: mode != InvoiceMode.view,
-                                    validator: (v) => v == null || v.isEmpty ? 'Yêu cầu' : null,
+                                    onLooked: (sender, selectedItem) {
+                                      // Xử lý sau khi lookup nếu cần
+                                    },
+                                    onChanged: (fieldKey, newValue) {
+                                      // Xử lý khi mã nội bộ thay đổi (nếu cần)
+                                    },
                                   ),
                                 ),
                               ],
@@ -381,10 +359,18 @@ void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
                               children: [
                                 // Cột 1: Mã Khách hàng (Thêm mới)
                                 Expanded(
-                                  child: TextFormField(
-                                    controller: _tab0Controls[Tab0Field.ma_kh],
-                                    decoration: const InputDecoration(labelText: 'Mã Khách hàng'),
+                                  child: V6VvarTextBox(label: 'Mã khách hàng', fieldKey: 'MA_KH', ftype: 'ftype', controller: _tab0Controls[Tab0Field.ma_kh]!,
+                                    vvar: 'MA_KH',
+                                    isRequired: true,
                                     enabled: mode != InvoiceMode.view,
+                                    onLooked: (sender, selectedItem) {
+                                      // Gán tên khách hàng sau khi lookup
+                                      final tenKh = H.getValue(selectedItem, 'TEN_KH', defaultValue: '').toString();
+                                      _tab1Controls[Tab1Field.ten_kh]!.text = tenKh;
+                                    },
+                                    onChanged: (fieldKey, newValue) {
+                                      // Xử lý khi mã khách hàng thay đổi (nếu cần)
+                                    },
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -392,7 +378,7 @@ void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
                                 Expanded(
                                   child: TextFormField(
                                     controller: _tab0Controls[Tab0Field.so_ct],
-                                    decoration: const InputDecoration(labelText: 'Số chứng từ'),
+                                    decoration: const InputDecoration(labelText: 'Số chứng từ', border: OutlineInputBorder()),
                                     enabled: mode != InvoiceMode.view,
                                     validator: (v) => v == null || v.isEmpty ? 'Yêu cầu' : null,
                                   ),
@@ -404,7 +390,7 @@ void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
                             // Hàng 3: Diễn giải dài
                             TextFormField(
                               controller: _tab1Controls[Tab1Field.ghi_chu],
-                              decoration: const InputDecoration(labelText: 'Ghi chú'),
+                              decoration: const InputDecoration(labelText: 'Ghi chú', border: OutlineInputBorder()),
                               enabled: mode != InvoiceMode.view,
                               maxLines: 2, // Cho phép nhiều dòng
                             ),
@@ -417,7 +403,7 @@ void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)
                               ),
-                              value: _status,
+                              initialValue: _status,
                               onChanged: mode == InvoiceMode.view ? null : (v) => setState(() => _status = v!),
                               items: InvoiceStatus.values.map((status) => DropdownMenuItem(
                                 value: status,
@@ -433,7 +419,7 @@ void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
                         padding: const EdgeInsets.all(8),
                         child: TextFormField(
                           controller: _tab1Controls[Tab1Field.ten_kh],
-                          decoration: const InputDecoration(labelText: 'Tên Khách hàng'),
+                          decoration: const InputDecoration(labelText: 'Tên Khách hàng', border: OutlineInputBorder()),
                           enabled: mode != InvoiceMode.view,
                         ),
                       ),
@@ -443,7 +429,7 @@ void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
                         child: TextFormField(
                           controller: _tab2Controls[Tab2Field.dien_giai],
                           decoration:
-                              const InputDecoration(labelText: 'Diễn giải'),
+                              const InputDecoration(labelText: 'Diễn giải', border: OutlineInputBorder()),
                           enabled: mode != InvoiceMode.view,
                           maxLines: 4,
                         ),
@@ -526,7 +512,7 @@ void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
               children: [
                 Expanded(
                     child: Text(
-                        'Tổng SL: ${invoice.T_SL.toStringAsFixed(2)}')),
+                        'Tổng SL1: ${invoice.T_SL1.toStringAsFixed(2)}')),
                 Expanded(
                     child: Text(
                         'Thành tiền: ${invoice.T_TIEN2.toStringAsFixed(0)}')),
@@ -535,7 +521,7 @@ void _fakeLookup(String fieldKey, String fvvar, TextBoxC controller) async {
                         'Thuế: ${invoice.T_THUE.toStringAsFixed(0)}')),
                 Expanded(
                     child: Text(
-                        'Thanh toán: ${invoice.totalPayable.toStringAsFixed(0)}')),
+                        'Ttt: ${invoice.T_TT.toStringAsFixed(0)}')),
               ],
             ),
           )
