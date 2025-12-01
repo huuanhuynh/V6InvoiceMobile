@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:v6_invoice_mobile/app_session.dart';
-import 'package:v6_invoice_mobile/models.dart';
+import 'package:v6_invoice_mobile/models/api_response.dart';
 
 class ApiService {
   static const String baseUrl = 'http://digitalantiz.net';
@@ -77,6 +77,57 @@ class ApiService {
       result.error = response.reasonPhrase;
       return result;
     }
+  }
+
+  static Future<dynamic> getInvoiceList({
+    required String maCt, // Invoice type: SOH or ARC
+    required String fromDate, // Format: yyyyMMdd (e.g., "20251020")
+    required String toDate, // Format: yyyyMMdd (e.g., "20251021")
+    required String maDvcs, // Base unit code (e.g., "BB")
+    String type = '2', // Type parameter (default: "2")
+    int pageIndex = 1, // Page number for pagination
+    int pageSize = 10, // Page size for pagination
+  }) async {
+    final token = AppSession.token;
+
+    try {
+      final requestBody = {
+        'fromDate': fromDate,
+        'toDate': toDate,
+        'maDvcs': maDvcs,
+        'type': type,
+        'pageIndex': pageIndex,
+        'pageSize': pageSize,
+      };
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/v6-api/qr-codes/inventory-management/$maCt'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        return (decoded);
+      } else if (response.statusCode == 401) {
+        throw ('Unauthorized');
+      } else {
+        throw Exception('Failed to load QR codes: ${response.body}');
+      }
+    } catch (e) {
+      throw ('Network error: $e');
+    }
+  }
+
+  static getNewInvoiceNumber(String mact) {
+    // Giả sử định dạng số hóa đơn là "SOH-YYYYMMDD-XXXX"
+    final now = DateTime.now();
+    final datePart = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final randomPart = (1000 + (now.millisecond % 9000)).toString(); // Tạo phần ngẫu nhiên
+    return '$mact-$datePart-$randomPart';
   }
 
 

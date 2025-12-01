@@ -1,7 +1,10 @@
 // lib/repository.dart
 import 'package:flutter/foundation.dart';
-import 'models.dart';
-import 'dart:math';
+import 'package:v6_invoice_mobile/app_session.dart';
+import 'package:v6_invoice_mobile/h.dart';
+import 'package:v6_invoice_mobile/models/invoice.dart';
+import 'package:v6_invoice_mobile/models/invoice_item.dart';
+import 'package:v6_invoice_mobile/services/api_service.dart';
 
 class InvoiceRepository extends ChangeNotifier {
   final List<Invoice> _invoices = [];
@@ -10,35 +13,43 @@ class InvoiceRepository extends ChangeNotifier {
 
   InvoiceRepository() {
     // sample data
-    _seed();
+    //_seed();
+    // real data loading can be done here
+    searchInvoiceList();
   }
 
-  void _seed() {
-    final rnd = Random();
-    for (int i = 1; i <= 6; i++) {
-      final inv = Invoice(
-        id: 'inv$i',
-        number: 'INV-2025-00$i',
-        date: DateTime.now().subtract(Duration(days: i * 2)),
-        customerName: 'Khách hàng $i',
-        notes: 'Ghi chú $i',
-      );
-      for (int j = 1; j <= 3; j++) {        
-        inv.items.add(InvoiceItem(
-          id: 'it${i}_$j',
-          data: {
-            'MA_VT': 'P$i$j',
-            'TEN_VT': 'Mặt hàng $i-$j',
-            'GIA_NT2': (rnd.nextDouble() * 1000).roundToDouble(),
-            'SO_LUONG': (rnd.nextInt(10) + 1).toDouble(),
-            'THUE_SUAT': 0.1,
-          }
-        ));
+  // Hàm _getInvoiceList lấy dữ liệu từ API hoặc nguồn dữ liệu thực tế.
+  List<Invoice> searchInvoiceList({DateTime? from, DateTime? to, String? searchValue}) {
+    final today = DateTime.now();
+    var searhFrom = from ?? today.subtract(const Duration(days: 7));
+    var searchTo = to ?? today;
+    
+    ApiService.getInvoiceList(
+      maCt: 'SOH', // Ví dụ: mã chứng từ cho hóa đơn bán hàng
+      fromDate: H.objectToString(searhFrom, dateFormat : 'yyyyMMdd'),
+      toDate: H.objectToString(searchTo, dateFormat : 'yyyyMMdd'),
+      maDvcs: AppSession.madvcs!,
+      pageIndex: 1,
+      pageSize: 100,
+    ).then((data) {
+      // Giả sử data là danh sách các hóa đơn nhận được từ API
+      // Cần chuyển đổi data thành danh sách Invoice
+      List<Invoice> fetchedInvoices = []; // Chuyển đổi data thành danh sách Invoice ở đây
+
+      // Cập nhật danh sách hóa đơn và thông báo thay đổi
+      _invoices.clear();
+      _invoices.addAll(fetchedInvoices);
+      notifyListeners();
+    }).catchError((error) {
+      // Xử lý lỗi nếu cần
+      if (kDebugMode) {
+        print('Error fetching invoices: $error');
       }
-      _invoices.add(inv);
-    }
+    });
+    return _invoices;
   }
 
+  // Tìm kiếm trên danh sách sẵn có.
   List<Invoice> search({
     DateTime? from,
     DateTime? to,
@@ -49,9 +60,9 @@ class InvoiceRepository extends ChangeNotifier {
       if (to != null && inv.date.isAfter(to)) return false;
       if (keyword != null && keyword.trim().isNotEmpty) {
         final k = keyword.toLowerCase();
-        if (!(inv.number.toLowerCase().contains(k) ||
-            inv.customerName.toLowerCase().contains(k) ||
-            inv.notes.toLowerCase().contains(k))) {
+        if (!(inv.soCt.toLowerCase().contains(k) ||
+            inv.getString('TEN_KH').toLowerCase().contains(k) ||
+            inv.getString('GHI_CHU').toLowerCase().contains(k))) {
           return false;
         }
       }
@@ -60,7 +71,7 @@ class InvoiceRepository extends ChangeNotifier {
       ..sort((a, b) => b.date.compareTo(a.date));
   }
 
-  Invoice createInvoice(Invoice invoice) {
+  Invoice addInvoice(Invoice invoice) {
     _invoices.add(invoice);
     notifyListeners();
     return invoice;

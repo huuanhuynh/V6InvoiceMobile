@@ -25,6 +25,7 @@ class _CatalogPageState extends State<CatalogPage> {
   int pageIndex = 1; int totalPages = 0; int totalRows = 0;
   int pageSize = 20;
   bool hasMorePage = false; bool hasPreviousPage = false;
+  Map<String, dynamic> configDic = {};
   //List<dynamic> items = [];
   Map<String, dynamic>? selectedItem;
   bool loading = false;
@@ -82,6 +83,7 @@ class _CatalogPageState extends State<CatalogPage> {
         totalRows = parsed['totalRows'];
         hasMorePage = parsed['hasNextPage'];
         hasPreviousPage = parsed['hasPreviousPage'];
+        configDic = parsed['config'] ?? {};
         itemsNotifier.value = List.from(list); // chỉ cập nhật bảng
       }
       else{

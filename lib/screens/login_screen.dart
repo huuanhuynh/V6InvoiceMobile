@@ -1,10 +1,10 @@
 // lib/screens/login_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:v6_invoice_mobile/pages/invoice_list_page.dart';
 import 'package:v6_invoice_mobile/services/api_service.dart';
 import 'package:v6_invoice_mobile/h.dart';
 import '../app_session.dart';
-import '../pages/invoice_page.dart'; // Import InvoicePage để dùng routeName
 
 class LoginScreen extends StatefulWidget {
   // Thêm routeName tĩnh để sử dụng trong main.dart
@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
             AppSession.madvcs = H.getValue(selectedItem, 'MA_DVCS');
             // Chuyển hướng đến trang chính sau khi chọn đơn vị
             if (mounted) {
-              Navigator.pushReplacementNamed(context, InvoicePage.routeName); 
+              Navigator.pushReplacementNamed(context, InvoiceListPage.routeName);
             }
           } else {
             // Người dùng đóng Dialog mà không chọn
@@ -126,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
               itemBuilder: (context, index) {
                 final item = catalogList[index];
                 // Giả định item có trường 'TenDonVi' hoặc 'Name'
-                final itemName = '${H.getValue(item, 'MA_DVCS')} ${H.getValue(item, 'TEN_DVCS')}';
+                final itemName = '${H.getValue(item, 'MA_DVCS')}: ${H.getValue(item, 'TEN_DVCS')}';
 
                 return ListTile(
                   title: Text(itemName),

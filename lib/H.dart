@@ -127,7 +127,7 @@ class H {
 
   /// Chuyển o thành chuỗi có định dạng
   static String objectToString(
-    dynamic o, {
+    dynamic o,{
     String dateFormat = 'dd/MM/yyyy',
     String thousandSeparator = ' ',
     int decDecimalPlaces = 2,
@@ -165,7 +165,7 @@ class H {
     }
   }
 
-  static double stringToDecimal(String s) {
+  static double stringToDouble(String s) {
     if (s.isEmpty) return 0;
     final clean = stringToSystemDecimalSymbolStringNumber(s);
     return double.tryParse(clean) ?? 0;

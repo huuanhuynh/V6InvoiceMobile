@@ -7,22 +7,27 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:v6_invoice_mobile/controls/textboxc.dart';
 import 'package:v6_invoice_mobile/controls/v6_vvar_textbox.dart';
+import 'package:v6_invoice_mobile/core/config/app_colors.dart';
 import 'package:v6_invoice_mobile/h.dart';
-import '../models.dart';
+import 'package:v6_invoice_mobile/models/invoice.dart';
+import 'package:v6_invoice_mobile/models/invoice_item.dart';
 import '../repository.dart';
 import 'item_edit_page.dart';
-import 'dart:math';
+//import 'dart:math';
 
 enum InvoiceMode { view, edit, add }
 
 class InvoicePage extends StatefulWidget {
   final String mact; // ví dụ: SOH
-  final Invoice? _invoice; // nếu null => tạo mới
+  final Invoice _invoice; // nếu null => tạo mới
+  final InvoiceMode mode;
+
   const InvoicePage({
     super.key,
     required this.mact,
-    Invoice? invoice,
-  }) : _invoice = invoice;
+    required Invoice invoice,
+    required this.mode,    
+  }): _invoice = invoice;
 
   static const routeName = '/invoice';
 
@@ -32,9 +37,7 @@ class InvoicePage extends StatefulWidget {
 
 
 // Định nghĩa các key cho Map Controllers
-enum Tab0Field { so_ct, ngay_ct, ma_kh, ma_sonb }
-enum Tab1Field { ten_kh, ghi_chu }
-enum Tab2Field { dien_giai }
+enum ControlField { so_ct, ngay_ct, ma_kh, ma_sonb ,ten_kh, nguoi_dai_dien, dia_chi, dien_giai, ma_so_thue, thong_tin_them, status}
 enum InvoiceStatus { A, B, C } // Giả định các trạng thái
 
 class _InvoicePageState extends State<InvoicePage>
@@ -44,56 +47,41 @@ class _InvoicePageState extends State<InvoicePage>
   late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
 
-  // controllers cho phần đầu
-  final Map<Tab0Field, TextBoxC> _tab0Controls = {
-    Tab0Field.so_ct: TextBoxC(),
-    Tab0Field.ma_kh: TextBoxC(),
-    Tab0Field.ma_sonb: TextBoxC(),
+  // controllers
+  final Map<ControlField, TextBoxC> _controllers = {
+    ControlField.so_ct: TextBoxS(fieldName: 'SO_CT'),
+    ControlField.ngay_ct: TextBoxD(fieldName: 'NGAY_CT', dateFormat: 'dd/MM/yyyy'),
+    ControlField.ma_kh: TextBoxS(fieldName: 'MA_KH'),
+    ControlField.ma_sonb: TextBoxS(fieldName: 'MA_SONB'),
+    ControlField.ten_kh: TextBoxS(fieldName: 'TEN_KH'),
+    ControlField.nguoi_dai_dien: TextBoxS(fieldName: 'ONG_BA'),
+    ControlField.dia_chi: TextBoxS(fieldName: 'DIA_CHI'),
+    ControlField.ma_so_thue: TextBoxS(fieldName: 'MA_SO_THUE'),
+    ControlField.thong_tin_them: TextBoxS(fieldName: 'THONG_TIN_THEM'),
+    //ControlField.ghi_chu: TextBoxS(fieldName: 'GHI_CHU'),
+    ControlField.dien_giai: TextBoxS(fieldName: 'DIEN_GIAI'),
+    ControlField.status: TextBoxS(fieldName: 'TRANG_THAI'),
   };
-  final Map<Tab1Field, TextBoxC> _tab1Controls = {
-    Tab1Field.ten_kh: TextBoxC(),
-    Tab1Field.ghi_chu: TextBoxC(),
-  };
-  final Map<Tab2Field, TextBoxC> _tab2Controls = {
-    Tab2Field.dien_giai: TextBoxC(),
-  };
-  DateTime? _date;
-  InvoiceStatus _status = InvoiceStatus.A; // Trạng thái chứng từ
+  
+  //InvoiceStatus _status = InvoiceStatus.A; // Trạng thái chứng từ
 
   @override
   void initState() {
     super.initState();
+    mode = widget.mode;
     // khởi tạo tab controller
     _tabController = TabController(length: 3, vsync: this);
-
-    if (widget._invoice == null) {
-      // tạo mới
-      final now = DateTime.now();
-      invoice = Invoice(
-        id: 'inv${now.millisecondsSinceEpoch}',
-        number: 'NEW-${now.year}-${Random().nextInt(9999).toString().padLeft(4, '0')}',
-        date: now,
-      );
-      mode = InvoiceMode.add;
-    } else {
-      // sửa
-      invoice = widget._invoice!;
-      mode = InvoiceMode.edit;
+    invoice = widget._invoice;
+    for (var ctrl in _controllers.values) {
+      ctrl.loadValueFrom(invoice);
     }
-
-    _tab0Controls[Tab0Field.so_ct]!.text = invoice.number;
-    _tab1Controls[Tab1Field.ten_kh]!.text = invoice.customerName;
-    _tab1Controls[Tab1Field.ghi_chu]!.text = invoice.notes;
-    // Gán giá trị giả định cho Mã khách hàng (vì chưa có trong Invoice model gốc)
-    _tab0Controls[Tab0Field.ma_kh]!.text = 'CUST001'; 
     
-    _date = invoice.date;
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    for (var ctrl in _tab0Controls.values) {
+    for (var ctrl in _controllers.values) {
       ctrl.dispose();
     }
     
@@ -102,22 +90,16 @@ class _InvoicePageState extends State<InvoicePage>
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
-    // invoice.number = _ctrlNumber.text;
-    // invoice.customerName = _ctrlCustomer.text;
-    // invoice.notes = _ctrlNotes.text;
     
     // Cập nhật lại invoice object
-    invoice.number = _tab0Controls[Tab0Field.so_ct]!.text;
-    invoice.customerName = _tab1Controls[Tab1Field.ten_kh]!.text;
-    invoice.notes = _tab1Controls[Tab1Field.ghi_chu]!.text;
-    invoice.date = _date ?? invoice.date;
-    // Bổ sung: Gán trạng thái và Mã KH (nếu có trong model)
-    // invoice.status = _status.name; 
-    // invoice.customerCode = _controllers[InvoiceField.customerCode]!.text;
-
+    for (var ctrl in _controllers.values) {
+      ctrl.setValueTo(invoice);
+    }
+    // Cập nhập chi tiết items?
+    
     final repo = context.read<InvoiceRepository>();
     if (mode == InvoiceMode.add) {
-      repo.createInvoice(invoice);
+      repo.addInvoice(invoice);
     } else {
       repo.updateInvoice(invoice);
     }
@@ -162,7 +144,7 @@ class _InvoicePageState extends State<InvoicePage>
           invoice.items.add(newItem);
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đã thêm ${newItem.stringOf("TEN_VT")} từ QR')),
+          SnackBar(content: Text('Đã thêm ${newItem.getString("TEN_VT")} từ QR')),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -193,14 +175,31 @@ class _InvoicePageState extends State<InvoicePage>
     );
   }
 
+  // Future<void> _pickDate_Old() async {
+  //   final picked = await showDatePicker(
+  //     context: context,
+  //     initialDate: _date ?? DateTime.now(),
+  //     firstDate: DateTime(2000),
+  //     lastDate: DateTime(2100),
+  //   );
+  //   if (picked != null) setState(() => _date = picked);
+  // }
   Future<void> _pickDate() async {
+    var ngayCtController = _controllers[ControlField.ngay_ct] as TextBoxD;
+    final initialDate = ngayCtController.getDate ?? DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _date ?? DateTime.now(),
+      initialDate: initialDate,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-    if (picked != null) setState(() => _date = picked);
+
+    if (picked != null) {
+      ngayCtController.text = H.objectToString(picked, dateFormat: ngayCtController.dateFormat); 
+      
+      // 2. Không cần gọi setState vì việc cập nhật TextEditingController tự động 
+      // làm mới TextFormField.
+    }
   }
 
   void _addItem() async {
@@ -211,7 +210,7 @@ class _InvoicePageState extends State<InvoicePage>
     if (item != null) {
       setState(() {
         invoice.items.add(item);
-        invoice.calculateTotals();
+        _calSummary();
       });
       //context.read<InvoiceRepository>().addItem(invoice.id, item);
     }
@@ -229,7 +228,7 @@ class _InvoicePageState extends State<InvoicePage>
         if (index != -1) {
           // Thay thế item cũ bằng item mới (result)
           invoice.items[index] = result; 
-          invoice.calculateTotals();
+          _calSummary();
           // Hoặc nếu bạn muốn đảm bảo tính bất biến tốt hơn (Immutable approach):
           /*
           _invoice = _invoice.copyWith(
@@ -248,7 +247,7 @@ class _InvoicePageState extends State<InvoicePage>
     //context.read<InvoiceRepository>().deleteItem(invoice.id, item.id);
     setState(() {
       invoice.items.removeWhere((it) => it.id == item.id);
-      invoice.calculateTotals();
+      _calSummary();
     });
   }
 
@@ -321,52 +320,74 @@ class _InvoicePageState extends State<InvoicePage>
                         padding: const EdgeInsets.all(8),
                         child: Column(
                           children: [
-                            // Hàng 1: Ngày & Mã nội bộ
+                            // Hàng 1: Mã nội bộ và Số chứng từ
                             Row(
                               children: [
-                                // Cột 1: Ngày chứng từ
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: mode == InvoiceMode.view ? null : _pickDate,
-                                    child: InputDecorator(                                      
-                                      decoration: const InputDecoration(labelText: 'Ngày chứng từ', border: OutlineInputBorder()),
-                                      child: Text(_date?.toIso8601String().split('T').first ?? ''),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                // Cột 2: Mã nội bộ (Giả sử là MA_NB)
+                                // Cột 1: Mã số nội bộ
                                 Expanded(
                                   child:
-                                  V6VvarTextBox(label: 'Mã nội bộ', fieldKey: 'MA_SONB', ftype: 'ftype', controller: _tab0Controls[Tab0Field.ma_sonb]!,
+                                  V6VvarTextBox(label: 'Mã nội bộ', fieldKey: 'MA_SONB', ftype: 'ftype', controller: _controllers[ControlField.ma_sonb]!,
                                     vvar: 'MA_SONB',
                                     isRequired: true,
                                     enabled: mode != InvoiceMode.view,
                                     onLooked: (sender, selectedItem) {
-                                      // Xử lý sau khi lookup nếu cần
+                                      _controllers[ControlField.so_ct]!.text = H.getValue(selectedItem, 'MA_CTNB', defaultValue: 'NEW_001').toString();  
                                     },
                                     onChanged: (fieldKey, newValue) {
                                       // Xử lý khi mã nội bộ thay đổi (nếu cần)
                                     },
                                   ),
                                 ),
+                                // Cột 2: Số chứng từ
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _controllers[ControlField.so_ct],
+                                    decoration: _fieldDecoration('Số chứng từ'),
+                                    enabled: mode != InvoiceMode.view,
+                                    validator: (v) => v == null || v.isEmpty ? 'Yêu cầu' : null,
+                                  ),
+                                ),
+                                
+                                const SizedBox(width: 12),
+                                
                               ],
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
 
-                            // Hàng 2: Mã KH & Số chứng từ
+                            // Hàng 2: Ngày ct, Mã KH
                             Row(
                               children: [
-                                // Cột 1: Mã Khách hàng (Thêm mới)
+                                // Cột 1: Ngày chứng từ
                                 Expanded(
-                                  child: V6VvarTextBox(label: 'Mã khách hàng', fieldKey: 'MA_KH', ftype: 'ftype', controller: _tab0Controls[Tab0Field.ma_kh]!,
+                                  child: TextFormField(
+                                    // Sử dụng TextBoxD Controller
+                                    controller: _controllers[ControlField.ngay_ct], 
+                                    
+                                    // Gán hàm _pickDate cho sự kiện nhấn vào icon Lịch
+                                    readOnly: true, // Không cho phép nhập thủ công
+                                    onTap: widget.mode == InvoiceMode.view ? null : _pickDate, // Cho phép nhấn nếu không phải chế độ xem
+                                    enabled: widget.mode != InvoiceMode.view, // Vô hiệu hóa khi ở chế độ xem
+                                    keyboardType: TextInputType.datetime,
+                                    decoration: _fieldDecoration('Ngày chứng từ',
+                                      // Thêm icon Lịch (Icon Button)
+                                      suffixIcon: IconButton(
+                                        icon: const Icon(Icons.calendar_today),
+                                        // Gọi _pickDate khi nhấn icon
+                                        onPressed: widget.mode == InvoiceMode.view ? null : _pickDate, 
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Cột 2: Mã Khách hàng (Thêm mới)
+                                Expanded(
+                                  child: V6VvarTextBox(label: 'Mã khách hàng', fieldKey: 'MA_KH', ftype: 'ftype', controller: _controllers[ControlField.ma_kh]!,
                                     vvar: 'MA_KH',
                                     isRequired: true,
                                     enabled: mode != InvoiceMode.view,
                                     onLooked: (sender, selectedItem) {
                                       // Gán tên khách hàng sau khi lookup
                                       final tenKh = H.getValue(selectedItem, 'TEN_KH', defaultValue: '').toString();
-                                      _tab1Controls[Tab1Field.ten_kh]!.text = tenKh;
+                                      _controllers[ControlField.ten_kh]!.text = tenKh;
                                     },
                                     onChanged: (fieldKey, newValue) {
                                       // Xử lý khi mã khách hàng thay đổi (nếu cần)
@@ -374,28 +395,20 @@ class _InvoicePageState extends State<InvoicePage>
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                // Cột 2: Số chứng từ
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _tab0Controls[Tab0Field.so_ct],
-                                    decoration: const InputDecoration(labelText: 'Số chứng từ', border: OutlineInputBorder()),
-                                    enabled: mode != InvoiceMode.view,
-                                    validator: (v) => v == null || v.isEmpty ? 'Yêu cầu' : null,
-                                  ),
-                                ),
+                                
                               ],
                             ),
-                            const SizedBox(height: 16),
-
-                            // Hàng 3: Diễn giải dài
-                            TextFormField(
-                              controller: _tab1Controls[Tab1Field.ghi_chu],
-                              decoration: const InputDecoration(labelText: 'Ghi chú', border: OutlineInputBorder()),
-                              enabled: mode != InvoiceMode.view,
-                              maxLines: 2, // Cho phép nhiều dòng
+                            const SizedBox(height: 10),
+                            // Hàng 3: Tên Khách hàng
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: TextFormField(
+                                controller: _controllers[ControlField.ten_kh],
+                                decoration: _fieldDecoration('Tên khách hàng'),
+                                enabled: mode != InvoiceMode.view,
+                              ),
                             ),
-                            const SizedBox(height: 16),
-                            
+                            const SizedBox(height: 10),
                             // Hàng 4: Dropdown Trạng thái
                             DropdownButtonFormField<InvoiceStatus>(
                               decoration: const InputDecoration(
@@ -403,31 +416,78 @@ class _InvoicePageState extends State<InvoicePage>
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)
                               ),
-                              initialValue: _status,
-                              onChanged: mode == InvoiceMode.view ? null : (v) => setState(() => _status = v!),
+                              initialValue: InvoiceStatus.values.firstWhere(
+                                // Tìm enum khớp với chuỗi đang lưu trong controller, nếu không tìm thấy thì dùng giá trị mặc định (first)
+                                (status) => status.name == _controllers[ControlField.status]!.text,
+                                orElse: () => InvoiceStatus.values.first, 
+                              ),
+                              onChanged: mode == InvoiceMode.view ? null : (v) => setState(() => _controllers[ControlField.status]!.text=v!.name),
                               items: InvoiceStatus.values.map((status) => DropdownMenuItem(
                                 value: status,
                                 child: Text(status.name),
                               )).toList(),
                             ),
-
                           ],
                         ),
                       ),
                       // Tab Khách hàng
                       SingleChildScrollView(
-                        padding: const EdgeInsets.all(8),
-                        child: TextFormField(
-                          controller: _tab1Controls[Tab1Field.ten_kh],
-                          decoration: const InputDecoration(labelText: 'Tên Khách hàng', border: OutlineInputBorder()),
-                          enabled: mode != InvoiceMode.view,
+                        padding: const EdgeInsets.all(12), // Tăng padding lên 12 để đẹp hơn
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch, // Đảm bảo các trường chiếm toàn bộ chiều rộng
+                          children: [
+                            
+
+                            // 2. Ông bà (Người đại diện)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: TextFormField(
+                                controller: _controllers[ControlField.nguoi_dai_dien], // Ví dụ: bạn cần định nghĩa Tab1Field.nguoi_dai_dien
+                                decoration: const InputDecoration(labelText: 'Người đại diện', border: OutlineInputBorder()),
+                                enabled: mode != InvoiceMode.view,
+                              ),
+                            ),
+
+                            // 3. Địa chỉ
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: TextFormField(
+                                controller: _controllers[ControlField.dia_chi], // Ví dụ: bạn cần định nghĩa Tab1Field.dia_chi
+                                decoration: const InputDecoration(labelText: 'Địa chỉ', border: OutlineInputBorder()),
+                                enabled: mode != InvoiceMode.view,
+                                maxLines: 3, // Cho phép nhập nhiều dòng cho Địa chỉ
+                              ),
+                            ),
+
+                            // 4. Mã số thuế
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: TextFormField(
+                                controller: _controllers[ControlField.ma_so_thue], // Ví dụ: bạn cần định nghĩa Tab1Field.ma_so_thue
+                                decoration: const InputDecoration(labelText: 'Mã số thuế', border: OutlineInputBorder()),
+                                enabled: mode != InvoiceMode.view,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+
+                            // 5. Thông tin thêm
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: TextFormField(
+                                controller: _controllers[ControlField.thong_tin_them], // Ví dụ: bạn cần định nghĩa Tab1Field.thong_tin_them
+                                decoration: const InputDecoration(labelText: 'Thông tin thêm', border: OutlineInputBorder()),
+                                enabled: mode != InvoiceMode.view,
+                                maxLines: 5, // Cho phép nhập nhiều dòng cho Thông tin thêm
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       // Tab diễn giải
                       SingleChildScrollView(
                         padding: const EdgeInsets.all(8),
                         child: TextFormField(
-                          controller: _tab2Controls[Tab2Field.dien_giai],
+                          controller: _controllers[ControlField.dien_giai],
                           decoration:
                               const InputDecoration(labelText: 'Diễn giải', border: OutlineInputBorder()),
                           enabled: mode != InvoiceMode.view,
@@ -465,9 +525,9 @@ class _InvoicePageState extends State<InvoicePage>
                             final it = invoice.items[idx];
                             return ListTile(
                               title:
-                                  Text('${it.stringOf("MA_VT")} — ${it.stringOf("TEN_VT")}'),
+                                  Text('${it.getString("MA_VT")} — ${it.getString("TEN_VT")}'),
                               subtitle: Text(
-                                  'Đơn giá: ${it.valueOf("GIA_NT21").toStringAsFixed(0)} × ${it.valueOf("SO_LUONG1").toStringAsFixed(2)} = ${it.valueOf("TIEN_NT2").toStringAsFixed(0)}'),
+                                  'Đơn giá: ${it.getDouble("GIA_NT21").toStringAsFixed(0)} × ${it.getDouble("SO_LUONG1").toStringAsFixed(2)} = ${it.getDouble("TIEN_NT2").toStringAsFixed(0)}'),
                               trailing: PopupMenuButton<String>(
                                 onSelected: (v) {
                                   if (v == 'edit') _editItem(it);
@@ -486,7 +546,7 @@ class _InvoicePageState extends State<InvoicePage>
                                   builder: (_) => AlertDialog(
                                     title: Text('Chi tiết ${it['MA_VT']}'),
                                     content: Text(
-                                        'Mô tả: ${it.stringOf("TEN_VT")}\nĐơn giá: ${it.valueOf("GIA_NT21")}\nSố lượng: ${it.valueOf("SO_LUONG1")}\nThuế: ${(it.valueOf("THUE_SUAT") * 100).toStringAsFixed(0)}%'),
+                                        'Mô tả: ${it.getString("TEN_VT")}\nĐơn giá: ${it.getDouble("GIA_NT21")}\nSố lượng: ${it.getDouble("SO_LUONG1")}\nThuế: ${(it.getDouble("THUE_SUAT") * 100).toStringAsFixed(0)}%'),
                                     actions: [
                                       TextButton(
                                           onPressed: () =>
@@ -512,21 +572,46 @@ class _InvoicePageState extends State<InvoicePage>
               children: [
                 Expanded(
                     child: Text(
-                        'Tổng SL1: ${invoice.T_SL1.toStringAsFixed(2)}')),
+                        'Tổng SL1: ${invoice.tSL1.toStringAsFixed(2)}')),
                 Expanded(
                     child: Text(
-                        'Thành tiền: ${invoice.T_TIEN2.toStringAsFixed(0)}')),
+                        'Thành tiền: ${invoice.tTIEN2.toStringAsFixed(0)}')),
                 Expanded(
                     child: Text(
-                        'Thuế: ${invoice.T_THUE.toStringAsFixed(0)}')),
+                        'Thuế: ${invoice.tTHUE.toStringAsFixed(0)}')),
                 Expanded(
                     child: Text(
-                        'Ttt: ${invoice.T_TT.toStringAsFixed(0)}')),
+                        'Ttt: ${invoice.tTT.toStringAsFixed(0)}')),
               ],
             ),
           )
         ],
       ),
+    );
+  }
+
+  InputDecoration _fieldDecoration(
+    String label, {
+    Widget? suffixIcon,
+    Widget? prefixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(fontSize: 12, color: AppColors.secondary),
+      contentPadding: const EdgeInsets.fromLTRB(5, 2, 2, 2),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: AppColors.border),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+      filled: true,
+      fillColor: AppColors.onPrimary,
+      suffixIcon: suffixIcon,
+      prefixIcon: prefixIcon,
     );
   }
 }

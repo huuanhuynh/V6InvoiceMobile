@@ -1,13 +1,11 @@
-// ignore_for_file: constant_identifier_names
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:v6_invoice_mobile/controls/textboxc.dart';
 import 'package:v6_invoice_mobile/controls/v6_vvar_textbox.dart';
-import 'package:v6_invoice_mobile/pages/catalog_page.dart';
 import 'package:v6_invoice_mobile/h.dart';
 import 'package:xml/xml.dart';
-import '../models.dart';
+
+import '../models/invoice_item.dart';
 
 class ItemEditPage extends StatefulWidget {
   static const routeName = '/item_edit';
@@ -41,7 +39,7 @@ class _ItemEditPageState extends State<ItemEditPage> {
   // Sửa chữa: Đặt hàm _getController ở đây
   TextBoxC _getController(String name) {
     // Luôn luôn tạo controller nếu nó chưa tồn tại.
-    final ctrl = _controllers.putIfAbsent(name, () => TextBoxC());
+    final ctrl = _controllers.putIfAbsent(name, () => TextBoxS(fieldName: name));
     
     // Xử lý nạp dữ liệu chỉnh sửa ban đầu tại đây (nếu có)
     // Chỉ nạp dữ liệu ban đầu một lần.
@@ -322,7 +320,7 @@ class _ItemEditPageState extends State<ItemEditPage> {
                 onLooked: _handleFieldLooked,
               ),
             );
-          }).toList(), // Chuyển sang List để dùng trong children
+          }), // Chuyển sang List để dùng trong children
         ],
       ),
     );

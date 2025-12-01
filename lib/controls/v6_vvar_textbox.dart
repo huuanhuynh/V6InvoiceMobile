@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:v6_invoice_mobile/controls/textboxc.dart';
+import 'package:v6_invoice_mobile/core/config/app_colors.dart';
 import 'package:v6_invoice_mobile/pages/catalog_page.dart';
 import 'package:v6_invoice_mobile/h.dart';
 
@@ -132,7 +133,19 @@ class _V6VvarTextBoxState extends State<V6VvarTextBox> {
       
       decoration: InputDecoration(
         labelText: widget.label,
-        border: const OutlineInputBorder(),
+        labelStyle: const TextStyle(fontSize: 12, color: AppColors.secondary),
+        contentPadding: const EdgeInsets.fromLTRB(5, 2, 2, 2),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+        filled: true,
+        fillColor: AppColors.onPrimary,
         suffixIcon: lookupIcon, // lookup icon
         suffixText: widget.isRequired ? '*' : null, 
         suffixStyle: widget.isRequired ? const TextStyle(color: Colors.red) : null,

@@ -1,14 +1,17 @@
 // lib/pages/invoice_list_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:v6_invoice_mobile/core/config/app_colors.dart';
+import 'package:v6_invoice_mobile/models/invoice.dart';
+import 'package:v6_invoice_mobile/services/api_service.dart';
 import '../repository.dart';
-import '../models.dart';
 import 'invoice_page.dart';
 
 class InvoiceListPage extends StatefulWidget {
   const InvoiceListPage({super.key});
   @override
   State<InvoiceListPage> createState() => _InvoiceListPageState();
+  static const routeName = '/invoicelist';
 }
 
 class _InvoiceListPageState extends State<InvoiceListPage> {
@@ -16,16 +19,23 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
   DateTime? to;
   final _ctrlKeyword = TextEditingController();
   List<Invoice> _results = [];
+  
 
   @override
   void initState() {
     super.initState();
-    _search();
+    from = to = DateTime.now();
+    _fullSearch();
   }
-
+  // Hàm tìm kiếm khi người dùng nhấn nút Tìm
   void _search() {
     final repo = context.read<InvoiceRepository>();
     final list = repo.search(from: from, to: to, keyword: _ctrlKeyword.text);
+    setState(() => _results = list);
+  }
+  void _fullSearch() {
+    final repo = context.read<InvoiceRepository>();
+    final list = repo.searchInvoiceList(from: from, to: to, searchValue: _ctrlKeyword.text);
     setState(() => _results = list);
   }
 
@@ -69,16 +79,13 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                   Expanded(
                     child: TextField(
                       controller: _ctrlKeyword,
-                      decoration: const InputDecoration(
-                        labelText: 'Từ khóa (số/họ tên/ghi chú)',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration:  _fieldDecoration('Từ khóa tìm kiếm'),
                       onSubmitted: (_) => _search(),
                     ),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
-                    onPressed: _search,
+                    onPressed: _fullSearch,
                     child: const Text('Tìm'),
                   )
                 ]),
@@ -89,10 +96,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                       child: InkWell(
                         onTap: _pickFrom,
                         child: InputDecorator(
-                          decoration:
-                              const InputDecoration(labelText: 'Từ ngày'),
-                          child: Text(
-                              from != null ? '${from!.day}/${from!.month}/${from!.year}' : '—'),
+                          decoration: _fieldDecoration('Từ ngày'),
+                          child: Text(from != null ? '${from!.day}/${from!.month}/${from!.year}' : '—'),
                         ),
                       ),
                     ),
@@ -101,9 +106,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                       child: InkWell(
                         onTap: _pickTo,
                         child: InputDecorator(
-                          decoration: const InputDecoration(labelText: 'Đến ngày'),
-                          child: Text(
-                              to != null ? '${to!.day}/${to!.month}/${to!.year}' : '—'),
+                          decoration: _fieldDecoration('Đến ngày'),
+                          child: Text(to != null ? '${to!.day}/${to!.month}/${to!.year}' : '—'),
                         ),
                       ),
                     ),
@@ -133,18 +137,10 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                 itemBuilder: (context, idx) {
                   final inv = _results[idx];
                   return ListTile(
-                    title: Text(inv.number),
-                    subtitle: Text('${inv.customerName} • ${inv.date.toIso8601String().split('T')[0]}'),
-                    trailing: Text(inv.T_TT.toStringAsFixed(0)),
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => InvoicePage(mact: 'SOH', invoice: inv), // sửa
-                        ),
-                      );
-                      _search();
-                    },
+                    title: Text(inv.soCt),
+                    subtitle: Text('${inv.getString('TEN_KH')} • ${inv.date.toIso8601String().split('T')[0]}'),
+                    trailing: Text(inv.tTT.toStringAsFixed(0)),
+                    onTap: ()=> editCurrentInvoice('SOH', inv),
                   );
                 },
               ),
@@ -157,21 +153,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
         children: [
           FloatingActionButton.extended(
             heroTag: 'add',
-            onPressed: () async {
-              final newInv = Invoice(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                number: 'INV-${DateTime.now().millisecondsSinceEpoch}',
-                date: DateTime.now(),
-              );
-              context.read<InvoiceRepository>().createInvoice(newInv);
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => InvoicePage(mact: 'SOH', invoice: newInv), // sửa
-                ),
-              );
-              _search();
-            },
+            onPressed: ()=> createNewInvoice('SOH'),
             label: const Text('Thêm'),
             icon: const Icon(Icons.add),
           ),
@@ -184,5 +166,57 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
         ],
       ),
     );
+  }
+
+
+  InputDecoration _fieldDecoration(
+    String label, {
+    Widget? suffixIcon,
+    Widget? prefixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(fontSize: 12, color: AppColors.secondary),
+      contentPadding: const EdgeInsets.fromLTRB(5, 2, 2, 2),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: AppColors.border),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+      filled: true,
+      fillColor: AppColors.onPrimary,
+      suffixIcon: suffixIcon,
+      prefixIcon: prefixIcon,
+    );
+  }
+
+  Future<void> createNewInvoice(String mact) async {
+    var newNumber = ApiService.getNewInvoiceNumber(mact);
+    final newInv = Invoice(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      number: newNumber,
+      date: DateTime.now(),
+    );
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InvoicePage(mact: mact, invoice: newInv, mode: InvoiceMode.add),
+      ),
+    );
+    _search();
+  }
+
+  Future<void> editCurrentInvoice(String mact, Invoice inv) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InvoicePage(mact: 'SOH', invoice: inv, mode: InvoiceMode.edit),
+      ),
+    );
+    _search();
   }
 }
