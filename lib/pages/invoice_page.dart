@@ -1,8 +1,4 @@
 // lib/pages/invoice_page.dart
-// dự định: khởi tại 3 danh sách controller cho 3 tab các thông tin chung, khách hàng, ghi chú, sau đó build theo 3 danh sách đó.
-
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:v6_invoice_mobile/controls/textboxc.dart';
@@ -11,6 +7,8 @@ import 'package:v6_invoice_mobile/core/config/app_colors.dart';
 import 'package:v6_invoice_mobile/h.dart';
 import 'package:v6_invoice_mobile/models/invoice.dart';
 import 'package:v6_invoice_mobile/models/invoice_item.dart';
+import 'package:v6_invoice_mobile/models/scan_item.dart';
+import 'package:v6_invoice_mobile/screens/qr_scan_screen.dart';
 import '../repository.dart';
 import 'item_edit_page.dart';
 //import 'dart:math';
@@ -88,70 +86,78 @@ class _InvoicePageState extends State<InvoicePage>
     super.dispose();
   }
 
-  void _save() {
+  void _save() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    // Cập nhật lại invoice object
     for (var ctrl in _controllers.values) {
       ctrl.setValueTo(invoice);
     }
-    // Cập nhập chi tiết items?
-    
     final repo = context.read<InvoiceRepository>();
-    if (mode == InvoiceMode.add) {
-      repo.addInvoice(invoice);
-    } else {
-      repo.updateInvoice(invoice);
+    try {
+      if (widget.mode == InvoiceMode.add) {
+        await repo.addInvoice(invoice);
+      } else {
+        await repo.updateInvoice(invoice);
+      }
+      
+      // THÀNH CÔNG: Chỉ đổi trạng thái và hiển thị SnackBar khi tác vụ thành công
+      if (mounted) {
+        setState(() => mode = InvoiceMode.view);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Đã lưu chứng từ thành công!')));
+      }
+    } catch (error) {
+      // 4. LỖI: HIỂN THỊ LỖI và KHÔNG thay đổi trạng thái (mode)
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(
+              content: Text('Lưu thất bại: ${error.toString()}'),
+              backgroundColor: Colors.red,
+            ));
+        // Trạng thái (mode) vẫn được giữ nguyên (add/edit)
+      }
     }
-
-    setState(() => mode = InvoiceMode.view);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Đã lưu chứng từ')));
   }
 
   // Hàm xử lý Scan QR MỚI
   void _scanQR() async {
-    // Hành động giả lập: Mở trang quét QR (có thể là một Dialog/Page riêng)
-    // Thay thế bằng hoặc `mobile_scanner` thực tế
-    final qrData = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Quét QR (Giả lập)'),
-        content: const Text('Chức năng quét QR đang được gọi...'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, '{"MA_VT":"FAKE-SP","TEN_VT":"Sản phẩm QR","SO_LUONG1":5.0,"GIA_NT21":100000.0}'),
-            child: const Text('Giả lập QR thành công'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
-          ),
-        ],
-      ),
+    // 1. Mở trang quét và sử dụng 'await' để đợi kết quả
+    //final result = await Navigator.push(context, QrScanPage());
+    final result = await Navigator.push<List<ScanItem>>(
+      context,
+      MaterialPageRoute(builder: (_) => QrScanScreen()),
     );
-
-    if (qrData != null) {
-      try {
-        final Map<String, dynamic> data = Map.from(jsonDecode(qrData));
-        // Tạo InvoiceItem mới từ dữ liệu QR
-        final newItem = InvoiceItem(
-          id: 'item${DateTime.now().millisecondsSinceEpoch}',
-          data: data,
+    // 2. Kiểm tra và gán kết quả trả về
+    if (result != null && result.isNotEmpty) {
+      final codeList = result.map((e) => e.code).join(', ');
+      final scanedItems = List<InvoiceItem>.empty(growable: true);
+      for (var scanItem in result) {
+        final item = InvoiceItem(
+          id: H.generateId(),
+          data: {
+            'MA_VT': scanItem.code,
+            'TEN_VT': 'Hàng hóa ${scanItem.code}', // Giả định tên hàng, hoặc hàm lookup by code
+            'SO_LUONG1': scanItem.quantity,
+            //'GIA_NT21': 100000, // Giá giả định  // giá và tiền lấy mặc định theo code.
+            //'TIEN_NT2': scanItem.quantity * 100000,
+            //'THUE_SUAT': 0.1, // Thuế suất giả định 10%
+          },
         );
-        
-        setState(() {
-          invoice.items.add(newItem);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đã thêm ${newItem.getString("TEN_VT")} từ QR')),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi đọc dữ liệu QR: $e')),
-        );
+        scanedItems.add(item);
       }
+      setState(() {
+        invoice.items.addAll(scanedItems);
+      });
+      // Tùy chọn: Hiển thị thông báo
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đã nhận kết quả: $codeList')),
+      );
+    } else {
+      // Xử lý trường hợp người dùng đóng trang mà không nhấn Save
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Quét mã bị hủy hoặc không có dữ liệu.')),
+      );
     }
+
   }
 
   void _deleteInvoice() {

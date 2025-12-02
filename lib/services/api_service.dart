@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:v6_invoice_mobile/app_session.dart';
 import 'package:v6_invoice_mobile/models/api_response.dart';
+import 'package:v6_invoice_mobile/models/invoice.dart';
 
 class ApiService {
   static const String baseUrl = 'http://digitalantiz.net';
@@ -129,6 +130,10 @@ class ApiService {
     final randomPart = (1000 + (now.millisecond % 9000)).toString(); // Tạo phần ngẫu nhiên
     return '$mact-$datePart-$randomPart';
   }
+
+  static Future<void> postNewInvoice(Invoice invoice) async {}
+
+  static Future<void> putUpdateInvoice(Invoice invoice) async {}
 
 
 }

@@ -12,8 +12,6 @@ class InvoiceRepository extends ChangeNotifier {
   List<Invoice> get invoices => List.unmodifiable(_invoices);
 
   InvoiceRepository() {
-    // sample data
-    //_seed();
     // real data loading can be done here
     searchInvoiceList();
   }
@@ -50,38 +48,59 @@ class InvoiceRepository extends ChangeNotifier {
   }
 
   // Tìm kiếm trên danh sách sẵn có.
-  List<Invoice> search({
-    DateTime? from,
-    DateTime? to,
-    String? keyword,
+  List<Invoice> search({DateTime? from, DateTime? to, String? keyword,
   }) {
+    final DateTime? startOfFromDay = from != null  ? DateTime(from.year, from.month, from.day) : null;
+    final DateTime? endOfToDay = to != null ? DateTime(to.year, to.month, to.day).add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1))
+        : null;
+
     return _invoices.where((inv) {
-      if (from != null && inv.date.isBefore(from)) return false;
-      if (to != null && inv.date.isAfter(to)) return false;
+      if (startOfFromDay != null && inv.date.isBefore(startOfFromDay)) {
+        return false;
+      }
+      if (endOfToDay != null && inv.date.isAfter(endOfToDay)) {
+         return false;
+      }
+      // --- Lọc theo Từ khóa ---
       if (keyword != null && keyword.trim().isNotEmpty) {
         final k = keyword.toLowerCase();
         if (!(inv.soCt.toLowerCase().contains(k) ||
-            inv.getString('TEN_KH').toLowerCase().contains(k) ||
-            inv.getString('GHI_CHU').toLowerCase().contains(k))) {
+              inv.getString('TEN_KH').toLowerCase().contains(k) ||
+              inv.getString('GHI_CHU').toLowerCase().contains(k))) {
           return false;
         }
       }
+      
       return true;
     }).toList()
       ..sort((a, b) => b.date.compareTo(a.date));
   }
 
-  Invoice addInvoice(Invoice invoice) {
-    _invoices.add(invoice);
-    notifyListeners();
-    return invoice;
+  Future<void> addInvoice(Invoice invoice) async {
+    try {
+      await ApiService.postNewInvoice(invoice); // Giả định có _apiService
+      _invoices.add(invoice);
+      notifyListeners(); 
+    } catch (e) {
+      throw Exception('Lỗi khi thêm hóa đơn: ${e.toString()}');
+    }
   }
 
-  void updateInvoice(Invoice invoice) {
-    final idx = _invoices.indexWhere((i) => i.id == invoice.id);
-    if (idx != -1) {
-      _invoices[idx] = invoice;
+  Future<void> updateInvoice(Invoice invoice) async {
+    try {
+      // 1. GỌI API: Thực hiện PUT/PATCH data lên máy chủ
+      await ApiService.putUpdateInvoice(invoice); 
+      
+      // 2. LƯU CỤC BỘ: Nếu API thành công, cập nhật đối tượng trong danh sách
+      // ... (logic tìm và cập nhật trong _invoices)
+      final idx = _invoices.indexWhere((i) => i.id == invoice.id);
+      if (idx != -1) {
+        _invoices[idx] = invoice;
+      }
+      
       notifyListeners();
+    } catch (e) {
+      throw Exception('Lỗi khi cập nhật hóa đơn: ${e.toString()}');
     }
   }
 

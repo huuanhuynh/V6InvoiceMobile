@@ -212,6 +212,12 @@ class H {
     return normalizedMap;
   }
 
+  static String generateId() {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('yyyyMMddHHmmssSSS').format(now);
+    return formattedDate;
+  }
+
 
 }
 
