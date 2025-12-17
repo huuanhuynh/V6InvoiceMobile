@@ -7,7 +7,9 @@ abstract class TextBoxC extends TextEditingController {
   dynamic tag;
   String fieldName = '';
   TextBoxC({super.text, this.fieldName = ''});
+  ///Gán giá trị từ control vào DataHandler(Invoice)
   void setValueTo(DataHandler handler);
+  ///Lấy giá trị từ DataHandler(Invoice) gán vào control
   void loadValueFrom(DataHandler invoice);
 }
 ///  String TextBox
@@ -26,11 +28,15 @@ class TextBoxS extends TextBoxC {
 }
 ///  Numeric TextBox
 class TextBoxN extends TextBoxC {
-  TextBoxN({super.text, super.fieldName = ''});
+  int decimalPlaces=0;
+  TextBoxN({super.text, super.fieldName = '', this.decimalPlaces = 0});
   double get doubleValue {
     return H.stringToDouble(text);
   }
-  
+  set setValue(Object? value) {
+    text = H.objectToString(value, thousandSeparator: ' ', decDecimalPlaces: decimalPlaces);
+  }
+
   @override
   void setValueTo(DataHandler handler) {
     handler.setDouble(fieldName, doubleValue);

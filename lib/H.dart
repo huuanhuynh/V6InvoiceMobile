@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:intl/intl.dart';
 
 /// Lớp hỗ trợ chuyển đổi và định dạng dữ liệu
@@ -216,6 +218,17 @@ class H {
     final now = DateTime.now();
     final formattedDate = DateFormat('yyyyMMddHHmmssSSS').format(now);
     return formattedDate;
+  }
+
+  static String toJson(Map<String, Object> requestBody) {
+    final json = jsonEncode(requestBody, toEncodable: (item) {
+      if (item is DateTime) {
+        // Chuyển DateTime thành định dạng ISO 8601 (ví dụ: 2025-11-28T00:00:00.000)
+        return item.toIso8601String();
+      }
+      return objectToString(item); // Trả về mặc định cho các kiểu khác
+    });
+    return json;
   }
 
 

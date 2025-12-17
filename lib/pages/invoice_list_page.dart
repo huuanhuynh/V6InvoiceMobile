@@ -1,7 +1,9 @@
 // lib/pages/invoice_list_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:v6_invoice_mobile/app_session.dart';
 import 'package:v6_invoice_mobile/core/config/app_colors.dart';
+import 'package:v6_invoice_mobile/h.dart';
 import 'package:v6_invoice_mobile/models/invoice.dart';
 import 'package:v6_invoice_mobile/services/api_service.dart';
 import '../repository.dart';
@@ -27,15 +29,17 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     from = to = DateTime.now();
     _fullSearch();
   }
+
   // Hàm tìm kiếm khi người dùng nhấn nút Tìm
   void _search() {
     final repo = context.read<InvoiceRepository>();
     final list = repo.search(from: from, to: to, keyword: _ctrlKeyword.text);
     setState(() => _results = list);
   }
-  void _fullSearch() {
+
+  void _fullSearch() async {
     final repo = context.read<InvoiceRepository>();
-    final list = repo.searchInvoiceList(from: from, to: to, searchValue: _ctrlKeyword.text);
+    final list = await repo.searchInvoiceList(from: from, to: to, searchValue: _ctrlKeyword.text);
     setState(() => _results = list);
   }
 
@@ -138,7 +142,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                   final inv = _results[idx];
                   return ListTile(
                     title: Text(inv.soCt),
-                    subtitle: Text('${inv.getString('TEN_KH')} • ${inv.date.toIso8601String().split('T')[0]}'),
+                    subtitle: Text('${inv.getString('TEN_KH')} • ${inv.ngayCt.toIso8601String().split('T')[0]}'),
                     trailing: Text(inv.tTT.toStringAsFixed(0)),
                     onTap: ()=> editCurrentInvoice('SOH', inv),
                   );
@@ -195,12 +199,15 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
   }
 
   Future<void> createNewInvoice(String mact) async {
-    var newNumber = ApiService.getNewInvoiceNumber(mact);
+    //var newSttRec = ApiService.getNewSttRec(mact);
     final newInv = Invoice(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      number: newNumber,
-      date: DateTime.now(),
+      dataAPI: null,
     );
+    //newInv.setString("STT_REC", newSttRec);
+    newInv.setString("MA_DVCS", AppSession.madvcs!);
+    newInv.setString("KIEU_POST", "0");
+    newInv.setDate("NGAY_CT", DateTime.now());
+    newInv.setString("MA_NT", "VND");
     await Navigator.push(
       context,
       MaterialPageRoute(

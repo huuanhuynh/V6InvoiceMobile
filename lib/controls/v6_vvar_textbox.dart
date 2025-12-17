@@ -17,6 +17,7 @@ class V6VvarTextBox extends StatefulWidget {
   final String fieldKey; // Tên trường lấy value
   final String ftype; // Kiểu dữ liệu (N2, C0,...)
   final bool isRequired; // Bắt buộc nhập (notempty)
+  final bool noFilter; // Không lọc khi tra cứu
   final bool enabled;
   
   // --- THUỘC TÍNH CỦA TEXTFIELD/FORM FIELD ---
@@ -32,6 +33,7 @@ class V6VvarTextBox extends StatefulWidget {
     required this.fieldKey,
     required this.ftype,
     this.isRequired = false,
+    this.noFilter = false,
     this.enabled = true, // Giá trị mặc định là true
     required this.controller,
     this.onChanged,
@@ -53,7 +55,7 @@ class _V6VvarTextBoxState extends State<V6VvarTextBox> {
     }
     
     // Lấy giá trị hiện tại của ô nhập liệu (để lọc trước)
-    final currentFilterValue = widget.controller.text.trim();
+    final currentFilterValue = widget.noFilter ? null : widget.controller.text.trim();
     
     // 2. Mở CatalogPage và đợi kết quả (selectedItem)
     final selectedItem = await Navigator.push<Map<String, dynamic>>(
@@ -62,7 +64,7 @@ class _V6VvarTextBoxState extends State<V6VvarTextBox> {
         builder: (_) => CatalogPage(
           fvvar: widget.vvar!, 
           type: '2', 
-          filterValue: currentFilterValue.isNotEmpty ? currentFilterValue : null,
+          filterValue: currentFilterValue,
         ),
       ),
     );

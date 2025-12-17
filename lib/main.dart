@@ -30,7 +30,7 @@ class V6InvoiceApp extends StatelessWidget {
           // Trang Login: Sẽ là trang đầu tiên (hoặc đặt route là '/')
           LoginScreen.routeName: (_) => const LoginScreen(), 
           InvoiceListPage.routeName: (_) => const InvoiceListPage(),
-          InvoicePage.routeName: (_) => InvoicePage(mact: "SOH", invoice: Invoice(id: 'id', number: 'number', date: DateTime.now()), mode: InvoiceMode.view),
+          InvoicePage.routeName: (_) => InvoicePage(mact: "SOH", invoice: Invoice(), mode: InvoiceMode.view),
         },
       ),
     );

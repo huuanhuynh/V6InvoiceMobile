@@ -7,17 +7,17 @@ import 'package:xml/xml.dart';
 
 import '../models/invoice_item.dart';
 
-class ItemEditPage extends StatefulWidget {
+class InvoiceItemEditPage extends StatefulWidget {
   static const routeName = '/item_edit';
   final InvoiceItem? item; // null => thêm mới
 
-  const ItemEditPage({super.key, this.item});
+  const InvoiceItemEditPage({super.key, this.item});
 
   @override
-  State<ItemEditPage> createState() => _ItemEditPageState();
+  State<InvoiceItemEditPage> createState() => _InvoiceItemEditPageState();
 }
 
-class _ItemEditPageState extends State<ItemEditPage> {
+class _InvoiceItemEditPageState extends State<InvoiceItemEditPage> {
   final _formKey = GlobalKey<FormState>();
   final Map<String, TextBoxC> _controllers = {};
   String? statusText;
@@ -156,12 +156,8 @@ class _ItemEditPageState extends State<ItemEditPage> {
       }
       
       // 3. Tạo InvoiceItem mới
-      final item = InvoiceItem(
-        id: widget.item?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        data: originalData, 
-      );
-      
-      Navigator.pop(context, item);
+      var savedItem = widget.item == null ? InvoiceItem(v6Data: originalData) : widget.item!.readDataV6(originalData);
+      Navigator.pop(context, savedItem);
     }
   }
 

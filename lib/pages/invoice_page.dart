@@ -9,8 +9,9 @@ import 'package:v6_invoice_mobile/models/invoice.dart';
 import 'package:v6_invoice_mobile/models/invoice_item.dart';
 import 'package:v6_invoice_mobile/models/scan_item.dart';
 import 'package:v6_invoice_mobile/screens/qr_scan_screen.dart';
+import 'package:v6_invoice_mobile/services/api_service.dart';
 import '../repository.dart';
-import 'item_edit_page.dart';
+import 'invoice_item_edit_page.dart';
 //import 'dart:math';
 
 enum InvoiceMode { view, edit, add }
@@ -34,8 +35,8 @@ class InvoicePage extends StatefulWidget {
 }
 
 
-// Định nghĩa các key cho Map Controllers
-enum ControlField { so_ct, ngay_ct, ma_kh, ma_sonb ,ten_kh, nguoi_dai_dien, dia_chi, dien_giai, ma_so_thue, thong_tin_them, status}
+// Khóa truy cập Controller trong trang.
+enum ControlField { so_ct, ngay_ct, ma_kh, ma_sonb ,ten_kh, nguoi_dai_dien, dia_chi, dien_giai, ma_so_thue, thong_tin_them, status, ma_nt, ty_gia}
 enum InvoiceStatus { A, B, C } // Giả định các trạng thái
 
 class _InvoicePageState extends State<InvoicePage>
@@ -56,9 +57,10 @@ class _InvoicePageState extends State<InvoicePage>
     ControlField.dia_chi: TextBoxS(fieldName: 'DIA_CHI'),
     ControlField.ma_so_thue: TextBoxS(fieldName: 'MA_SO_THUE'),
     ControlField.thong_tin_them: TextBoxS(fieldName: 'THONG_TIN_THEM'),
-    //ControlField.ghi_chu: TextBoxS(fieldName: 'GHI_CHU'),
     ControlField.dien_giai: TextBoxS(fieldName: 'DIEN_GIAI'),
     ControlField.status: TextBoxS(fieldName: 'TRANG_THAI'),
+    ControlField.ma_nt: TextBoxS(fieldName: 'MA_NT'),
+    ControlField.ty_gia: TextBoxN(fieldName: 'TY_GIA', decimalPlaces: 2),
   };
   
   //InvoiceStatus _status = InvoiceStatus.A; // Trạng thái chứng từ
@@ -68,8 +70,9 @@ class _InvoicePageState extends State<InvoicePage>
     super.initState();
     mode = widget.mode;
     // khởi tạo tab controller
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     invoice = widget._invoice;
+    // Load giá trị từ invoice vào controllers dựa theo ctrl.fieldName
     for (var ctrl in _controllers.values) {
       ctrl.loadValueFrom(invoice);
     }
@@ -86,17 +89,38 @@ class _InvoicePageState extends State<InvoicePage>
     super.dispose();
   }
 
+  TextBoxD get ngayCtController => _controllers[ControlField.ngay_ct]! as TextBoxD;
+  TextBoxN get tyGiaController => _controllers[ControlField.ty_gia]! as TextBoxN;
+  DateTime? get ngayCt => ngayCtController.getDate;
+  set tyGia(Object? value) {
+    // 1. Chuyển đổi giá trị dynamic/Object? thành String đã định dạng
+    //    Hàm H.objectToString sẽ xử lý null, double, int, v.v., và áp dụng định dạng.
+    tyGiaController.text = H.objectToString(
+      value,
+      thousandSeparator: ' ', 
+      decDecimalPlaces: 2
+    );
+  }
+
   void _save() async {
     if (!_formKey.currentState!.validate()) return;
+    // Cập nhập các giá trị AM.
     for (var ctrl in _controllers.values) {
       ctrl.setValueTo(invoice);
     }
+
     final repo = context.read<InvoiceRepository>();
     try {
-      if (widget.mode == InvoiceMode.add) {
-        await repo.addInvoice(invoice);
-      } else {
-        await repo.updateInvoice(invoice);
+      if (mode == InvoiceMode.add) {
+        var response = await repo.addInvoice(invoice);
+        if (response.error != null) {
+          throw Exception(response.error);
+        }
+      } else if (mode == InvoiceMode.edit) {
+        var response = await repo.updateInvoice(invoice);
+        if (response.error != null) {
+          throw Exception(response.error);
+        }
       }
       
       // THÀNH CÔNG: Chỉ đổi trạng thái và hiển thị SnackBar khi tác vụ thành công
@@ -132,8 +156,8 @@ class _InvoicePageState extends State<InvoicePage>
       final scanedItems = List<InvoiceItem>.empty(growable: true);
       for (var scanItem in result) {
         final item = InvoiceItem(
-          id: H.generateId(),
-          data: {
+          v6Data:
+          {
             'MA_VT': scanItem.code,
             'TEN_VT': 'Hàng hóa ${scanItem.code}', // Giả định tên hàng, hoặc hàm lookup by code
             'SO_LUONG1': scanItem.quantity,
@@ -145,7 +169,7 @@ class _InvoicePageState extends State<InvoicePage>
         scanedItems.add(item);
       }
       setState(() {
-        invoice.items.addAll(scanedItems);
+        invoice.detailDatas.addAll(scanedItems);
       });
       // Tùy chọn: Hiển thị thông báo
       ScaffoldMessenger.of(context).showSnackBar(
@@ -170,7 +194,7 @@ class _InvoicePageState extends State<InvoicePage>
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
           TextButton(
             onPressed: () {
-              context.read<InvoiceRepository>().deleteInvoice(invoice.id);
+              context.read<InvoiceRepository>().deleteInvoice(invoice.sttrec);
               Navigator.pop(context);
               Navigator.pop(context);
             },
@@ -209,13 +233,13 @@ class _InvoicePageState extends State<InvoicePage>
   }
 
   void _addItem() async {
-    final item = await Navigator.push<InvoiceItem>(
+    final newItem = await Navigator.push<InvoiceItem>(
       context,
-      MaterialPageRoute(builder: (_) => const ItemEditPage()),
+      MaterialPageRoute(builder: (_) => const InvoiceItemEditPage()),
     );
-    if (item != null) {
+    if (newItem != null) {
       setState(() {
-        invoice.items.add(item);
+        invoice.addItem(newItem);
         _calSummary();
       });
       //context.read<InvoiceRepository>().addItem(invoice.id, item);
@@ -223,26 +247,18 @@ class _InvoicePageState extends State<InvoicePage>
   }
 
   void _editItem(InvoiceItem item) async {
-    final result = await Navigator.push<InvoiceItem>(
+    final savedItem = await Navigator.push<InvoiceItem>(
       context,
-      MaterialPageRoute(builder: (_) => ItemEditPage(item: item)),
+      MaterialPageRoute(builder: (_) => InvoiceItemEditPage(item: item)),
     );
-    if (result != null) {
+    if (savedItem != null) {
       setState(() {
-        final index = invoice.items.indexOf(item);
+        final index = invoice.detailDatas.indexOf(item);
 
         if (index != -1) {
           // Thay thế item cũ bằng item mới (result)
-          invoice.items[index] = result; 
+          //invoice.detailDatas[index] = savedItem; item đã được cập nhật trực tiếp trong trang edit
           _calSummary();
-          // Hoặc nếu bạn muốn đảm bảo tính bất biến tốt hơn (Immutable approach):
-          /*
-          _invoice = _invoice.copyWith(
-            items: List.of(_invoice.items) 
-              ..removeAt(index)
-              ..insert(index, result),
-          );
-          */
         }
       });
       //context.read<InvoiceRepository>().updateItem(invoice.id, result);
@@ -252,7 +268,7 @@ class _InvoicePageState extends State<InvoicePage>
   void _deleteItem(InvoiceItem item) {
     //context.read<InvoiceRepository>().deleteItem(invoice.id, item.id);
     setState(() {
-      invoice.items.removeWhere((it) => it.id == item.id);
+      invoice.detailDatas.removeWhere((it) => it.sttRec0 == item.sttRec0);
       _calSummary();
     });
   }
@@ -268,7 +284,7 @@ class _InvoicePageState extends State<InvoicePage>
     invoice = context
         .watch<InvoiceRepository>()
         .invoices
-        .firstWhere((i) => i.id == invoice.id, orElse: () => invoice);
+        .firstWhere((i) => i.sttrec == invoice.sttrec, orElse: () => invoice);
 
     final title = mode == InvoiceMode.add
         ? 'Thêm chứng từ ${widget.mact}'
@@ -313,6 +329,7 @@ class _InvoicePageState extends State<InvoicePage>
                   tabs: const [
                     Tab(text: 'Chung'),
                     Tab(text: 'Khách hàng'),
+                    Tab(text: 'Tiền tệ'),
                     Tab(text: 'Ghi chú'),
                   ],
                 ),
@@ -489,6 +506,41 @@ class _InvoicePageState extends State<InvoicePage>
                           ],
                         ),
                       ),
+                      // Tab Tiền tệ
+                      SingleChildScrollView(
+                        padding: const EdgeInsets.all(12), // Tăng padding lên 12 để đẹp hơn
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch, // Đảm bảo các trường chiếm toàn bộ chiều rộng
+                          children: [
+                            Row(children: [
+                              Expanded(
+                                child: V6VvarTextBox(label: 'Mã nguyên tệ', fieldKey: 'MA_NT', ftype: 'C0', controller: _controllers[ControlField.ma_nt]!,
+                                  vvar: 'MA_NT',
+                                  isRequired: true, noFilter: true, enabled: mode != InvoiceMode.view,
+                                  onLooked: (sender, selectedItem) async {
+                                    tyGiaController.setValue = await ApiService.getTyGia(
+                                        H.getValue(selectedItem, 'MA_NT', defaultValue: 'VND').toString(), ngayCt ?? DateTime.now());
+                                  },
+                                  onChanged: (fieldKey, newValue) {
+                                    
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _controllers[ControlField.ty_gia], // Ví dụ: bạn cần định nghĩa Tab1Field.ma_so_thue
+                                  decoration: _fieldDecoration('Tỷ giá'),
+                                  enabled: mode != InvoiceMode.view,
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
+                            ],),
+                            // Các trường tiền tệ khác nếu cần
+                          ],
+                        ),
+                      ), // end Tab Tiền tệ
+                      
                       // Tab diễn giải
                       SingleChildScrollView(
                         padding: const EdgeInsets.all(8),
@@ -523,12 +575,12 @@ class _InvoicePageState extends State<InvoicePage>
                   ),
                 ),
                 Expanded(
-                  child: invoice.items.isEmpty
+                  child: invoice.detailDatas.isEmpty
                       ? const Center(child: Text('Chưa có chi tiết.'))
                       : ListView.builder(
-                          itemCount: invoice.items.length,
+                          itemCount: invoice.detailDatas.length,
                           itemBuilder: (context, idx) {
-                            final it = invoice.items[idx];
+                            final it = invoice.detailDatas[idx];
                             return ListTile(
                               title:
                                   Text('${it.getString("MA_VT")} — ${it.getString("TEN_VT")}'),
