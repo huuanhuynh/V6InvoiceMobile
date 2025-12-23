@@ -195,13 +195,39 @@ class H {
       }
     }
 
-    // 5. Nếu không tìm thấy, trả về giá trị mặc định
     return defaultValue;
   }
 
   static double getDouble(Map<String, dynamic> map, String key, {double defaultValue = 0}) {
     final value = getValue(map, key, defaultValue: defaultValue);
     return objectToDecimal(value);
+  }
+
+  static int getInt(Map<String, dynamic> map, String key, {int defaultValue = 0}) {
+    final value = getValue(map, key, defaultValue: defaultValue);
+    return objectToInt(value);
+  }
+
+  /// Gán giá trị vào Map với key không phân biệt hoa thường nhưng vẫn giữ nguyên key gốc
+  static void setValue(Map<String, dynamic> map, String key, dynamic value)
+  {
+    String keyLower = key.toLowerCase();
+    String? actualKey;
+    for (final mapKey in map.keys) {
+      if (mapKey.toLowerCase() == keyLower) {
+        actualKey = mapKey;
+        break;
+      }
+    }
+    if (actualKey != null) {
+      map[actualKey] = value;
+    } else {
+      map[key] = value;
+    }
+  }
+
+  static void setDouble(Map<String, dynamic> map, String key, double value) {
+    setValue(map, key, value);
   }
 
   static Map<String, dynamic> normalizeMapKeys(Map<String, dynamic> originalMap) {

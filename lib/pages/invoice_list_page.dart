@@ -5,7 +5,7 @@ import 'package:v6_invoice_mobile/app_session.dart';
 import 'package:v6_invoice_mobile/core/config/app_colors.dart';
 import 'package:v6_invoice_mobile/h.dart';
 import 'package:v6_invoice_mobile/models/invoice.dart';
-import 'package:v6_invoice_mobile/services/api_service.dart';
+import 'package:v6_invoice_mobile/models/paging_info.dart';
 import '../repository.dart';
 import 'invoice_page.dart';
 
@@ -21,13 +21,15 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
   DateTime? to;
   final _ctrlKeyword = TextEditingController();
   List<Invoice> _results = [];
-  
+  //int _currentPage = 1;
+  PagingInfo _pageInfo = PagingInfo();
+  bool loading = false;
 
   @override
   void initState() {
     super.initState();
     from = to = DateTime.now();
-    _fullSearch();
+    _apiSearch();
   }
 
   // Hàm tìm kiếm khi người dùng nhấn nút Tìm
@@ -36,11 +38,36 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     final list = repo.search(from: from, to: to, keyword: _ctrlKeyword.text);
     setState(() => _results = list);
   }
-
-  void _fullSearch() async {
+  /// Tìm bằng hàm chung của Trí_TM
+  void _apiSearch() async {
     final repo = context.read<InvoiceRepository>();
     final list = await repo.searchInvoiceList(from: from, to: to, searchValue: _ctrlKeyword.text);
     setState(() => _results = list);
+  }
+  /// Tìm bằng hàm riêng cho SOH của V6 Invoice
+  void _apiSearch2() async {
+    _apiSearchSOH(null);
+  }
+  void _apiSearchSOH(int? pageIndex) async {
+    int loadPage = pageIndex ?? 1;
+    setState(() => loading = true);
+    final repo = context.read<InvoiceRepository>();
+    final list = await repo.searchInvoiceListSOH(from: from, to: to, searchValue: _ctrlKeyword.text, pageIndex: loadPage, pageSize: 10);
+    _pageInfo = repo.pagingInfo;
+    setState(() {
+      loading = false;
+      _results = list;
+    });
+  }
+  void _prevPage() {
+    if (_pageInfo.hasPreviousPage) {
+      _apiSearchSOH(_pageInfo.currentPage - 1);
+    }
+  }
+  void _nextPage() {
+    if (_pageInfo.hasMorePage) {
+      _apiSearchSOH(_pageInfo.currentPage + 1);
+    }
   }
 
   Future<void> _pickFrom() async {
@@ -72,28 +99,13 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Danh sách Chứng từ')),
+      appBar: AppBar(title: const Text('Danh sách đơn đặt hàng')),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-                Row(children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _ctrlKeyword,
-                      decoration:  _fieldDecoration('Từ khóa tìm kiếm'),
-                      onSubmitted: (_) => _search(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _fullSearch,
-                    child: const Text('Tìm'),
-                  )
-                ]),
-                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
@@ -129,6 +141,30 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                     )
                   ],
                 ),
+                const SizedBox(height: 8),
+                Row(children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _ctrlKeyword,
+                      decoration:  _fieldDecoration('Từ khóa tìm kiếm'),
+                      onSubmitted: (_) => _search(),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                  // ElevatedButton(
+                  //   onPressed: _apiSearch,
+                  //   child: const Text('Tìm'),
+                  // ),
+                  //const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _apiSearch2,
+                    child: const Text('Tìm SOH'),
+                  )
+                ])
               ],
             ),
           ),
@@ -143,7 +179,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                   return ListTile(
                     title: Text(inv.soCt),
                     subtitle: Text('${inv.getString('TEN_KH')} • ${inv.ngayCt.toIso8601String().split('T')[0]}'),
-                    trailing: Text(inv.tTT.toStringAsFixed(0)),
+                    trailing: Text(inv.tSoLuong.toStringAsFixed(0)),
                     onTap: ()=> editCurrentInvoice('SOH', inv),
                   );
                 },
@@ -152,6 +188,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
           )
         ],
       ),
+      bottomNavigationBar: _buildBottomBar(context),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -162,10 +199,45 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
             icon: const Icon(Icons.add),
           ),
           const SizedBox(height: 8),
-          FloatingActionButton(
-            heroTag: 'refresh',
-            onPressed: _search,
-            child: const Icon(Icons.refresh),
+          // FloatingActionButton(
+          //   heroTag: 'refresh',
+          //   onPressed: _search,
+          //   child: const Icon(Icons.refresh),
+          // ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(BuildContext context) {
+    return Container(
+      color: Colors.grey.shade200,
+      padding: const EdgeInsets.all(8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Cột trái: hiển thị lỗi (bấm để copy)
+          
+
+          // Cột giữa: số trang
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text('${_pageInfo.rowCount} dòng. Trang ${_pageInfo.currentPage}/${_pageInfo.totalPages} của ${_pageInfo.totalRows} dòng'),
+          ),
+
+          // Cột phải: điều hướng
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: _pageInfo.hasPreviousPage && !loading ? _prevPage : null,
+                child: const Text('← Trước'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _pageInfo.hasMorePage && !loading ? _nextPage : null,
+                child: const Text('Sau →'),
+              ),
+            ],
           ),
         ],
       ),
@@ -203,11 +275,14 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     final newInv = Invoice(
       dataAPI: null,
     );
-    //newInv.setString("STT_REC", newSttRec);
+    // Thiết lập các giá trị mặc định cho hóa đơn mới
+    newInv.setString("MA_CT", mact);
+    newInv.setDate("NGAY_CT", DateTime.now());
     newInv.setString("MA_DVCS", AppSession.madvcs!);
     newInv.setString("KIEU_POST", "0");
-    newInv.setDate("NGAY_CT", DateTime.now());
     newInv.setString("MA_NT", "VND");
+    newInv.setDouble("TY_GIA", 1);
+    
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -224,6 +299,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
         builder: (_) => InvoicePage(mact: 'SOH', invoice: inv, mode: InvoiceMode.edit),
       ),
     );
+    // Sau khi edit thông tin, _search sẽ cập nhập lại trạng thái danh sách
     _search();
   }
 }

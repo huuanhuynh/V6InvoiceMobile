@@ -5,6 +5,7 @@ import 'package:v6_invoice_mobile/controls/textboxc.dart';
 import 'package:v6_invoice_mobile/controls/v6_vvar_textbox.dart';
 import 'package:v6_invoice_mobile/core/config/app_colors.dart';
 import 'package:v6_invoice_mobile/h.dart';
+import 'package:v6_invoice_mobile/models/api_response.dart';
 import 'package:v6_invoice_mobile/models/invoice.dart';
 import 'package:v6_invoice_mobile/models/invoice_item.dart';
 import 'package:v6_invoice_mobile/models/scan_item.dart';
@@ -72,6 +73,7 @@ class _InvoicePageState extends State<InvoicePage>
     // khởi tạo tab controller
     _tabController = TabController(length: 4, vsync: this);
     invoice = widget._invoice;
+    invoice.keepOldData();
     // Load giá trị từ invoice vào controllers dựa theo ctrl.fieldName
     for (var ctrl in _controllers.values) {
       ctrl.loadValueFrom(invoice);
@@ -100,6 +102,19 @@ class _InvoicePageState extends State<InvoicePage>
       thousandSeparator: ' ', 
       decDecimalPlaces: 2
     );
+  }
+
+  void _prepareEdit() {
+    invoice.keepOldData();
+    setState(() => mode = InvoiceMode.edit);
+  }
+  void _cancelEdit() {
+    invoice.resetChanges();
+    // Load lại giá trị từ invoice vào controllers dựa theo ctrl.fieldName
+    for (var ctrl in _controllers.values) {
+      ctrl.loadValueFrom(invoice);
+    }
+    setState(() => mode = InvoiceMode.view);
   }
 
   void _save() async {
@@ -156,7 +171,7 @@ class _InvoicePageState extends State<InvoicePage>
       final scanedItems = List<InvoiceItem>.empty(growable: true);
       for (var scanItem in result) {
         final item = InvoiceItem(
-          v6Data:
+          dataV6:
           {
             'MA_VT': scanItem.code,
             'TEN_VT': 'Hàng hóa ${scanItem.code}', // Giả định tên hàng, hoặc hàm lookup by code
@@ -184,7 +199,13 @@ class _InvoicePageState extends State<InvoicePage>
 
   }
 
-  void _deleteInvoice() {
+  void _deleteInvoiceClick() {
+    if (!invoice.canDelete) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không có quyền xóa.')),
+      );
+      return;
+    }
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -193,10 +214,24 @@ class _InvoicePageState extends State<InvoicePage>
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
           TextButton(
-            onPressed: () {
-              context.read<InvoiceRepository>().deleteInvoice(invoice.sttrec);
-              Navigator.pop(context);
-              Navigator.pop(context);
+            onPressed: () async {
+              ApiResponse response = await context.read<InvoiceRepository>().deleteInvoice(invoice);
+              if (response.error != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Xóa thất bại: ${response.error}')),
+                );
+                Navigator.pop(context);
+                return;
+              }
+              else {
+                if (H.objectToBool(response.data)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Đã xóa chứng từ thành công.')),
+                  );
+                  Navigator.pop(context);await Future.delayed(const Duration(milliseconds: 500));
+                  Navigator.pop(context);
+                }
+              }
             },
             child: const Text('Xóa'),
           ),
@@ -298,17 +333,19 @@ class _InvoicePageState extends State<InvoicePage>
         actions: [
           if (mode == InvoiceMode.view)
             IconButton(
-              onPressed: () => setState(() => mode = InvoiceMode.edit),
+              onPressed: _prepareEdit,
               icon: const Icon(Icons.edit),
             ),
           if (mode != InvoiceMode.view)
             IconButton(onPressed: _save, icon: const Icon(Icons.save)),
           PopupMenuButton<String>(
             onSelected: (v) {
-              if (v == 'delete') _deleteInvoice();
+              if (v == 'delete') _deleteInvoiceClick();
+              if (v == 'cancel') _cancelEdit();
             },
             itemBuilder: (_) => [
               const PopupMenuItem(value: 'delete', child: Text('Xóa')),
+              const PopupMenuItem(value: 'cancel', child: Text('Hủy')),
             ],
           )
         ],
@@ -354,7 +391,11 @@ class _InvoicePageState extends State<InvoicePage>
                                     isRequired: true,
                                     enabled: mode != InvoiceMode.view,
                                     onLooked: (sender, selectedItem) {
-                                      _controllers[ControlField.so_ct]!.text = H.getValue(selectedItem, 'MA_CTNB', defaultValue: 'NEW_001').toString();  
+                                      String mact = H.getValue(selectedItem, 'MA_CTNB', defaultValue: '').toString();
+                                      if (mact.isNotEmpty) {
+                                        invoice.setString('MA_CT', mact);
+                                      }
+                                      _controllers[ControlField.so_ct]!.text = mact + '-001'; // Ví dụ gán số chứng từ mặc định
                                     },
                                     onChanged: (fieldKey, newValue) {
                                       // Xử lý khi mã nội bộ thay đổi (nếu cần)
@@ -518,7 +559,7 @@ class _InvoicePageState extends State<InvoicePage>
                                   vvar: 'MA_NT',
                                   isRequired: true, noFilter: true, enabled: mode != InvoiceMode.view,
                                   onLooked: (sender, selectedItem) async {
-                                    tyGiaController.setValue = await ApiService.getTyGia(
+                                    tyGiaController.doubleValue = await ApiService.getTyGia(
                                         H.getValue(selectedItem, 'MA_NT', defaultValue: 'VND').toString(), ngayCt ?? DateTime.now());
                                   },
                                   onChanged: (fieldKey, newValue) {
@@ -630,13 +671,13 @@ class _InvoicePageState extends State<InvoicePage>
               children: [
                 Expanded(
                     child: Text(
-                        'Tổng SL1: ${invoice.tSL1.toStringAsFixed(2)}')),
+                        'Tổng SL1: ${invoice.tSoLuong1.toStringAsFixed(2)}')),
                 Expanded(
                     child: Text(
-                        'Thành tiền: ${invoice.tTIEN2.toStringAsFixed(0)}')),
+                        'Thành tiền: ${invoice.tTien2.toStringAsFixed(0)}')),
                 Expanded(
                     child: Text(
-                        'Thuế: ${invoice.tTHUE.toStringAsFixed(0)}')),
+                        'Thuế: ${invoice.tThueNt.toStringAsFixed(0)}')),
                 Expanded(
                     child: Text(
                         'Ttt: ${invoice.tTT.toStringAsFixed(0)}')),
@@ -672,4 +713,6 @@ class _InvoicePageState extends State<InvoicePage>
       prefixIcon: prefixIcon,
     );
   }
+
+  
 }

@@ -25,7 +25,7 @@ class _CatalogPageState extends State<CatalogPage> {
   int pageIndex = 1; int totalPages = 0; int totalRows = 0;
   int pageSize = 20;
   bool hasMorePage = false; bool hasPreviousPage = false;
-  Map<String, dynamic> configDic = {};
+  Map<String, dynamic> lookupInfo = {};
   //List<dynamic> items = [];
   Map<String, dynamic>? selectedItem;
   bool loading = false;
@@ -83,7 +83,7 @@ class _CatalogPageState extends State<CatalogPage> {
         totalRows = parsed['totalRows'];
         hasMorePage = parsed['hasNextPage'];
         hasPreviousPage = parsed['hasPreviousPage'];
-        configDic = parsed['config'] ?? {};
+        lookupInfo = parsed['lookupInfo'] ?? {};
         itemsNotifier.value = List.from(list); // chỉ cập nhật bảng
       }
       else{
@@ -128,7 +128,7 @@ class _CatalogPageState extends State<CatalogPage> {
   void _selectItem() {
     if (selectedItem != null) {
       // Trả về item đã chọn (Map<String, dynamic>)
-      Navigator.pop(context, selectedItem); 
+      Navigator.pop(context, {"selectedItem": selectedItem, "lookupInfo": lookupInfo});
     } else {
       // Thông báo nếu chưa chọn item nào
       ScaffoldMessenger.of(context).showSnackBar(

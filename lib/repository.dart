@@ -5,15 +5,16 @@ import 'package:v6_invoice_mobile/h.dart';
 import 'package:v6_invoice_mobile/models/api_response.dart';
 import 'package:v6_invoice_mobile/models/invoice.dart';
 import 'package:v6_invoice_mobile/models/invoice_item.dart';
+import 'package:v6_invoice_mobile/models/paging_info.dart';
 import 'package:v6_invoice_mobile/services/api_service.dart';
 /// Quản lý dữ liệu hóa đơn trong ứng dụng.
 class InvoiceRepository extends ChangeNotifier {
   final List<Invoice> _invoices = [];
-
   List<Invoice> get invoices => List.unmodifiable(_invoices);
+  PagingInfo pagingInfo = PagingInfo();
 
   InvoiceRepository() {
-    // real data loading can be done here
+    // Tải với giá trị mặc định khi khởi tạo
     searchInvoiceList();
   }
 
@@ -28,7 +29,7 @@ class InvoiceRepository extends ChangeNotifier {
     var searchTo = to ?? today;
     
     try {
-      // 3. Sử dụng 'await' để chờ kết quả API
+      
       final response = await ApiService.getInvoiceList(
         maCt: 'SOH', 
         fromDate: H.objectToString(searhFrom, dateFormat : 'yyyyMMdd'),
@@ -49,7 +50,7 @@ class InvoiceRepository extends ChangeNotifier {
       
       // Cập nhật danh sách hóa đơn và thông báo thay đổi (Giữ lại nếu đây là Change Notifier)
       _invoices.clear();
-      _invoices.addAll(fetchedInvoices);
+      _invoices.addAll(fetchedInvoices..sort((a, b) => b.ngayCt.compareTo(a.ngayCt)));
       notifyListeners();
       
       // 4. Trả về kết quả cuối cùng (được bao bọc trong Future)
@@ -65,41 +66,79 @@ class InvoiceRepository extends ChangeNotifier {
       return []; // Trả về list rỗng khi có lỗi
     }
   }
-  // Hàm _getInvoiceList lấy dữ liệu từ API hoặc nguồn dữ liệu thực tế.
-  List<Invoice> searchInvoiceList_Old({DateTime? from, DateTime? to, String? searchValue}) {
+
+  Future<List<Invoice>> searchInvoiceListSOH({
+    DateTime? from,
+    DateTime? to,
+    String? searchValue,
+    int pageIndex = 1,
+    int pageSize = 100,
+  }) async { // 2. Thêm từ khóa 'async'
     final today = DateTime.now();
     var searhFrom = from ?? today.subtract(const Duration(days: 7));
     var searchTo = to ?? today;
     
-    ApiService.getInvoiceList(
-      maCt: 'SOH', // Ví dụ: mã chứng từ cho hóa đơn bán hàng
-      fromDate: H.objectToString(searhFrom, dateFormat : 'yyyyMMdd'),
-      toDate: H.objectToString(searchTo, dateFormat : 'yyyyMMdd'),
-      maDvcs: AppSession.madvcs!,
-      pageIndex: 1,
-      pageSize: 100,
-    ).then((response) {
-      // Giả sử data là danh sách các hóa đơn nhận được từ API
-      // Cần chuyển đổi data thành danh sách Invoice
-      List<Invoice> fetchedInvoices = []; // Chuyển đổi data thành danh sách Invoice ở đây
-      if (response['data']['items'] != null) {
-        for (var item in response['data']['items']) {
-          Invoice inv = Invoice(dataAPI: item);
+    try {
+      
+      final response = await ApiService.getInvoiceListSOH(
+        fromDate: H.objectToString(searhFrom, dateFormat : 'yyyyMMdd'),
+        toDate: H.objectToString(searchTo, dateFormat : 'yyyyMMdd'),
+        maDvcs: AppSession.madvcs!,
+        advance: searchValue,
+        pageIndex: pageIndex,
+        pageSize: pageSize,
+      );
+      
+      // Logic chuyển đổi data
+      List<Invoice> fetchedInvoices = [];
+      if (response['invoiceMasterData'] != null && response['invoiceDetailData'] != null) {
+        for (var item in response['invoiceMasterData']) {
+          item['ads'] = [];
+          for (var detail in response['invoiceDetailData']) {
+            if (detail['stt_rec'] == item['stt_rec']) {
+              item['ads'].add(detail);
+            }
+          }
+          Invoice inv = Invoice(dataV6: item);
           fetchedInvoices.add(inv);
         }
       }
-      // Cập nhật danh sách hóa đơn và thông báo thay đổi
+      
+      // Cập nhật danh sách hóa đơn và thông báo thay đổi (Giữ lại nếu đây là Change Notifier)
       _invoices.clear();
-      _invoices.addAll(fetchedInvoices);
+      _invoices.addAll(fetchedInvoices..sort((a, b) {
+        int cmp = b.ngayCt.compareTo(a.ngayCt);
+        if (cmp == 0) {
+          return b.time0.compareTo(a.time0);
+        }
+        return cmp;
+      }));
       notifyListeners();
-    }).catchError((error) {
-      // Xử lý lỗi nếu cần
+
+      // Cập nhật thông tin phân trang
+      var pageInfoData = response['paginationInfo'];
+      if (pageInfoData != null) {
+        pagingInfo.rowCount = _invoices.length;
+        pagingInfo.totalRows = H.getInt(pageInfoData, 'totalRows');
+        pagingInfo.totalPages = H.getInt(pageInfoData, 'totalPages');
+        pagingInfo.currentPage = H.getInt(pageInfoData, 'currentPage');
+        pagingInfo.pageSize = H.getInt(pageInfoData, 'pageSize');
+      }
+      
+      // 4. Trả về kết quả cuối cùng (được bao bọc trong Future)
+      return _invoices; 
+      
+    } catch (error) {
+      // Xử lý và ném lỗi (hoặc trả về danh sách rỗng nếu lỗi không nghiêm trọng)
       if (kDebugMode) {
         print('Error fetching invoices: $error');
       }
-    });
-    return _invoices;
+      // Có thể ném lỗi hoặc trả về danh sách rỗng tùy logic
+      // throw Exception('Failed to load invoices'); 
+      return []; // Trả về list rỗng khi có lỗi
+    }
   }
+
 
   // Tìm kiếm trên danh sách sẵn có.
   List<Invoice> search({DateTime? from, DateTime? to, String? keyword,
@@ -174,9 +213,18 @@ class InvoiceRepository extends ChangeNotifier {
     }
   }
 
-  void deleteInvoice(String id) {
-    _invoices.removeWhere((i) => i.sttrec == id);
-    notifyListeners();
+  Future<ApiResponse> deleteInvoice(Invoice invoice) async {
+    try {
+      var response = await ApiService.deleteInvoiceSOH(invoice);
+      
+      if (H.objectToBool(response.data)) {
+        _invoices.removeWhere((i) => i.sttrec == invoice.sttrec);
+        notifyListeners();
+      }
+      return response;
+    } catch (e) {
+      throw Exception('Lỗi khi xóa hóa đơn: ${e.toString()}');
+    }
   }
 
   void addItem(String invoiceId, InvoiceItem item) {

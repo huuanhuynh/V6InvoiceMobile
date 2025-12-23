@@ -24,9 +24,10 @@ class V6VvarTextBox extends StatefulWidget {
   final TextBoxC controller;
   final FieldChangeCallback? onChanged;
   final FieldLookedCallback? onLooked;
-  final Map<String, String>? configTables; // Cấu hình toàn bộ XML (cần thiết cho tra cứu)
-
-  const V6VvarTextBox({
+  final Map<String, String>? configTables;
+  Map<String, dynamic>? lookupInfo;
+  
+  V6VvarTextBox({
     super.key,
     required this.label,
     this.vvar,
@@ -38,7 +39,7 @@ class V6VvarTextBox extends StatefulWidget {
     required this.controller,
     this.onChanged,
     this.onLooked,
-    this.configTables,
+    this.configTables
   });
 
   @override
@@ -58,7 +59,7 @@ class _V6VvarTextBoxState extends State<V6VvarTextBox> {
     final currentFilterValue = widget.noFilter ? null : widget.controller.text.trim();
     
     // 2. Mở CatalogPage và đợi kết quả (selectedItem)
-    final selectedItem = await Navigator.push<Map<String, dynamic>>(
+    final selectResult = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
         builder: (_) => CatalogPage(
@@ -70,10 +71,13 @@ class _V6VvarTextBoxState extends State<V6VvarTextBox> {
     );
 
     // 3. Xử lý kết quả trả về
-    if (selectedItem != null) {
+    if (selectResult != null) {
+      final selectedItem = selectResult['selectedItem'];
+      final lookupInfo = selectResult['lookupInfo'];
+      String fieldKey = lookupInfo == null ? widget.fieldKey : (lookupInfo['vvalue'] ?? widget.fieldKey);
       widget.controller.tag = selectedItem;
-      
-      final valueToSet = H.getValue(selectedItem, widget.fieldKey, defaultValue: null);
+      widget.lookupInfo = lookupInfo;
+      final valueToSet = H.getValue(selectedItem, fieldKey, defaultValue: null);
 
       if (valueToSet != null) {
         widget.controller.text = H.objectToString(valueToSet);

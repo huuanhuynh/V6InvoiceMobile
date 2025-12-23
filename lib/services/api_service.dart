@@ -7,6 +7,7 @@ import 'package:v6_invoice_mobile/models/invoice.dart';
 
 class ApiService {
   //static const String baseUrl = 'http://digitalantiz.net/v6-api';
+  ///https://localhost:5001
   static const String baseUrl = 'https://localhost:5001';
 
   static Future<ApiResponse> login({required String username, required String password
@@ -82,6 +83,7 @@ class ApiService {
     }
   }
 
+  /// Lấy dữ liệu danh sách chứng từ trả về {data: {items: List<invoiceAPI>}}
   static Future<Map<String,dynamic>> getInvoiceList({
     required String maCt, // Invoice type: SOH or ARC
     required String fromDate, // Format: yyyyMMdd (e.g., "20251020")
@@ -125,6 +127,97 @@ class ApiService {
     }
   }
 
+  static Future<Map<String,dynamic>> getInvoiceListSOH({
+    required String fromDate, // Format: yyyyMMdd (e.g., "20251020")
+    required String toDate, // Format: yyyyMMdd (e.g., "20251021")
+    required String maDvcs, // Base unit code (e.g., "BB")
+    String? advance,
+    String type = '2', // Type parameter (default: "2")
+    int pageIndex = 1, // Page number for pagination
+    int pageSize = 10, // Page size for pagination
+  }) async {
+    final token = AppSession.token;
+
+    try {
+      final queryParameters = {
+        'fromDate': fromDate,
+        'toDate': toDate,
+        'maDvcs': maDvcs,
+        //'advance': advance, // chưa dùng
+        'type': type,
+        'pageIndex': pageIndex.toString(),
+        'pageSize': pageSize.toString(),
+      };
+      Uri uri;
+      if (baseUrl.startsWith('http://')) {
+        uri = Uri.http(baseUrl.replaceFirst('http://', ''), '/invoices/sale-order', queryParameters);
+      } else if (baseUrl.startsWith('https://')) {
+        uri = Uri.https(baseUrl.replaceFirst('https://', ''), '/invoices/sale-order', queryParameters);
+      }
+      else {
+        uri = Uri.http(baseUrl, '/invoices/sale-order', queryParameters);
+      }
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body) as Map<String,dynamic>;
+        return decoded;
+      } else if (response.statusCode == 401) {
+        throw ('Unauthorized');
+      } else {
+        throw Exception('getInvoiceList Failed: ${response.body}');
+      }
+    } catch (e) {
+      throw ('Network error: $e');
+    }
+  }
+
+
+  /// Lấy dữ liệu 1 chứng từ trả về {data: invoiceAPI}
+  static Future<Map<String,dynamic>> getInvoice({
+    required String maCt, // Invoice type: SOH or IXB
+    required String sttRec,
+    required String maDvcs
+  }) async {
+    final token = AppSession.token;
+
+    try {
+      final requestBody = {
+        'maDvcs': maDvcs,
+        'lan': 'V'
+      };
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/qr-codes/inventory-management/$maCt/$sttRec'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body) as Map<String,dynamic>;
+        return decoded;
+      } else if (response.statusCode == 401) {
+        throw ('Unauthorized');
+      } else {
+        throw Exception('getInvoiceList Failed: ${response.body}');
+      }
+    } catch (e) {
+      throw ('Network error: $e');
+    }
+  }
+
+  
+
   static getNewSttRec(String mact) {
     // Giả sử định dạng số hóa đơn là "SOH-YYYYMMDD-XXXX"
     final now = DateTime.now();
@@ -139,7 +232,7 @@ class ApiService {
       final requestBody = {
         'mode': 'ADD',
         'data': {
-          'master' : invoice.dataAPI,
+          'master' : invoice.getMasterDataForAPI,
           'details' : invoice.getDetailDatasForAPI
         },
       };
@@ -174,7 +267,7 @@ class ApiService {
       final requestBody = {
         'mode': 'EDIT',
         'data': {
-          'master' : invoice.dataAPI,
+          'master' : invoice.getMasterDataForAPI,
           'details' : invoice.getDetailDatasForAPI
         },
       };
@@ -188,6 +281,43 @@ class ApiService {
           'Authorization': 'Bearer $token',
         },
         body: jsonBody,
+      );
+
+      ApiResponse result = ApiResponse();
+      result.response = response;
+      if (response.statusCode == 200) {
+        result.data = jsonDecode(response.body);
+      } else if (response.statusCode == 401) {
+        throw ('Unauthorized');
+      } else {
+        result.error = response.reasonPhrase;
+      }
+      return result;
+    } catch (e) {
+      throw ('Error: $e');
+    }
+  }
+
+  static Future<ApiResponse> deleteInvoiceSOH(Invoice invoice) async {
+    final token = AppSession.token;
+    try {
+      // final requestBody = {
+      //   'mode': 'DELETE',
+      //   'data': {
+      //     'stt_rec': invoice.sttrec, // chỉ cần gửi stt_rec để xóa cho nhẹ? // hoặc tạo hàm xóa
+      //     'master' : invoice.getMasterDataForAPI,
+      //     'details' : invoice.getDetailDatasForAPI
+      //   },
+      // };
+      //String jsonBody = H.toJson(requestBody);
+
+      final response = await http.delete(
+        Uri.parse('$baseUrl/qr-codes/inventory-management/SOH/${invoice.sttrec}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        //body: jsonBody,
       );
 
       ApiResponse result = ApiResponse();
@@ -219,6 +349,8 @@ class ApiService {
       return 1.0; // Mặc định VND mant0
     }
   }
+
+  
 
 
 }

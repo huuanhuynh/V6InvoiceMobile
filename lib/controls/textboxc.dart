@@ -30,10 +30,12 @@ class TextBoxS extends TextBoxC {
 class TextBoxN extends TextBoxC {
   int decimalPlaces=0;
   TextBoxN({super.text, super.fieldName = '', this.decimalPlaces = 0});
+  /// Lấy giá trị số đã convert từ TextBox
   double get doubleValue {
     return H.stringToDouble(text);
   }
-  set setValue(Object? value) {
+  /// Gán giá trị số vào TextBox, chuỗi hiển thị tự động format theo decimalPlaces
+  set doubleValue(Object? value) {
     text = H.objectToString(value, thousandSeparator: ' ', decDecimalPlaces: decimalPlaces);
   }
 

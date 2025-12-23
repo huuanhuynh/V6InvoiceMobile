@@ -45,7 +45,7 @@ class _InvoiceItemEditPageState extends State<InvoiceItemEditPage> {
     // Chỉ nạp dữ liệu ban đầu một lần.
     if (widget.item != null && ctrl.text.isEmpty) {
         final key = name; // Tên trường (fcolumn)
-        final value = widget.item!.data[key];
+        final value = H.getValue(widget.item!.data, key);
         if (value != null) {
             ctrl.text = value.toString();
         }
@@ -142,7 +142,7 @@ class _InvoiceItemEditPageState extends State<InvoiceItemEditPage> {
         
         // Chỉ lưu nếu giá trị không phải null (có thể điều chỉnh logic này)
         if (convertedValue != null) { 
-            originalData[fieldKey] = convertedValue; 
+            H.setValue(originalData, fieldKey, convertedValue);
         } else {
             // Nếu giá trị là null và đã có key gốc, có thể xóa key đó
             // originalData.remove(fieldKey); // Tùy thuộc vào yêu cầu nghiệp vụ
@@ -151,12 +151,12 @@ class _InvoiceItemEditPageState extends State<InvoiceItemEditPage> {
         // Lấy thêm dữ liệu trong tag
         final tag = _getController('MA_VT').tag;
         if (tag != null) {
-          originalData['ten_vt'] = H.getValue(tag, 'ten_vt');
+          H.setValue(originalData, 'ten_vt', H.getValue(tag, 'ten_vt'));
         }
       }
       
       // 3. Tạo InvoiceItem mới
-      var savedItem = widget.item == null ? InvoiceItem(v6Data: originalData) : widget.item!.readDataV6(originalData);
+      var savedItem = widget.item == null ? InvoiceItem(dataV6: originalData) : widget.item!.readDataV6(originalData);
       Navigator.pop(context, savedItem);
     }
   }
@@ -201,8 +201,26 @@ class _InvoiceItemEditPageState extends State<InvoiceItemEditPage> {
             // Gán thêm tên vật tư từ tag
             final dvt = H.getValue(selectedItem, 'dvt');
             if (dvt != null) {
+              final dvt1Control = _getController('DVT1');
+              dvt1Control.text = dvt;
+            }
+            break;
+            case 'DVT1':
+            // Gán thêm đơn vị tính từ selectedItem
+            final dvt = H.getValue(selectedItem, 'dvt');
+            if (dvt != null) {
               final dvtControl = _getController('DVT');
               dvtControl.text = dvt;
+              // Gán thêm HE_SO1T và HE_SO1M nếu có và tính toán lại SỐ_LƯỢNG từ SỐ_LƯỢNG1
+              final heSo1T = H.getDouble(selectedItem, 'he_so1t', defaultValue: 1);
+              final heSo1M = H.getDouble(selectedItem, 'he_so1m', defaultValue: 1);
+              final soLuong1Control = _getController('SO_LUONG1') as TextBoxN;
+              final soLuongControl = _getController('SO_LUONG') as TextBoxN;
+              final soLuong1 = soLuong1Control.doubleValue;
+              if (heSo1M != 0 && heSo1T != 0) {
+                final soLuong = soLuong1 * heSo1T / heSo1M;
+                soLuongControl.doubleValue = soLuong;
+              }
             }
             break;
           case 'MA_THUE_I':
@@ -281,11 +299,12 @@ class _InvoiceItemEditPageState extends State<InvoiceItemEditPage> {
         padding: const EdgeInsets.all(12),
         children: [
           ...visibleTables.map((configMap) {
-            final label = configMap['caption']?.trim() ?? '';
-            final field = configMap['fcolumn']?.trim() ?? '';
-            final ftype = configMap['ftype']?.trim() ?? ''; // Ví dụ: N2, N4, C0
-            final isRequired = (configMap['notempty']?.toLowerCase().trim() ?? 'false') == 'true';
-            final fvvar = configMap['fvvar']?.trim();
+            
+            final label = (H.getValue(configMap, 'caption', defaultValue: '')?.toString() ?? '').trim();
+            final field = (H.getValue(configMap, 'fcolumn', defaultValue: '')?.toString() ?? '').trim();
+            final ftype = (H.getValue(configMap, 'ftype', defaultValue: '')?.toString() ?? '').trim();    // Ví dụ: N2, N4, C0
+            final isRequired = H.objectToBool(H.getValue(configMap, 'notempty'));
+            final fvvar = H.getValue(configMap, 'fvvar', defaultValue: '')?.toString() ?? '';
             
             final controller = _getController(field);
             // XÁC ĐỊNH ICON TRA CỨU

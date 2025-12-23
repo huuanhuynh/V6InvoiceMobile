@@ -6,14 +6,14 @@ class InvoiceItem {
   Map<String, dynamic> data = {};
 
   InvoiceItem({
-    Map<String,dynamic>? triTMdata,
-    Map<String, dynamic>? v6Data
+    Map<String,dynamic>? dataAPI,
+    Map<String, dynamic>? dataV6
   }){
-    if (v6Data != null) {
-      readDataV6(v6Data);
+    if (dataV6 != null) {
+      readDataV6(dataV6);
     }
-    else if (triTMdata != null) {
-      readData(triTMdata);
+    else if (dataAPI != null) {
+      readData(dataAPI);
     }
   }
 
@@ -36,17 +36,21 @@ class InvoiceItem {
     'STT_REC0': 'sttRec0',
     'MA_VT': 'maVt',
     'TEN_VT': 'tenVt',
+    'DVT': 'dvt',
+    'DVT1': 'dvt1',
     'MA_KHO': 'maKho',
-    'MA_KHOI': 'maKhoi',
+    'TEN_KHO': 'tenKho',
+    'MA_KHOI': 'maKhoI',
     'SO_LUONG': 'soLuong',
     'SO_LUONG1': 'soLuong1',
     'GIA_NT2': 'giaNt2',
     'TIEN_NT2': 'tienNt2',
+    'THUE': 'thue',
     'THUE_NT': 'thueNt',
     'MA_THUE': 'maThue',
     'GHI_CHU': 'ghiChu',
   };
-  String m(String fieldV6){
+  String fieldAPI(String fieldV6){
     return H.getValue(mapper, fieldV6, defaultValue: fieldV6);
   }
   
@@ -54,7 +58,7 @@ class InvoiceItem {
   Map<String, dynamic> toDataAPI() {
     Map<String, dynamic> dataAPI = {};
     data.forEach((key, value) {
-      dataAPI[m(key)] = value;
+      dataAPI[fieldAPI(key)] = value;
     });
     return dataAPI;
   }

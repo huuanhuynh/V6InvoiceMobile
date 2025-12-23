@@ -4,7 +4,7 @@
     <stt_forder>1</stt_forder>
     <ma_ct>SOH</ma_ct>
     <ma_dm>ALVT</ma_dm>
-    <caption>Mã  vật tư</caption>
+    <caption>Mã vật tư</caption>
     <caption2>Item</caption2>
     <loai>1</loai>
     <ftype>C0</ftype>
@@ -24,10 +24,33 @@
     <MA_DM0>0C6D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
   </Table>
   <Table>
+    <stt_forder>1</stt_forder>
+    <ma_ct>SOH</ma_ct>
+    <ma_dm>ALVT</ma_dm>
+    <caption>Tên vật tư</caption>
+    <caption2>Item</caption2>
+    <loai>1</loai>
+    <ftype>C0</ftype>
+    <forder>1</forder>
+    <width>110</width>
+    <carry>0</carry>
+    <fstatus>true</fstatus>
+    <checkvvar>true</checkvvar>
+    <notempty>true</notempty>
+    <fdecimal>0</fdecimal>
+    <visible>true</visible>
+    <fvvar></fvvar>
+    <fcolumn>TEN_VT</fcolumn>
+    <lstatus>1,2</lstatus>
+    <fstatus2>true</fstatus2>
+    <UID>0c6d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
+    <MA_DM0>0C6D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
+  </Table>
+  <Table>
     <stt_forder>3</stt_forder>
     <ma_ct>SOH</ma_ct>
     <ma_dm>ALDVT</ma_dm>
-    <caption>Đơn vị tính</caption>
+    <caption>Đơn vị tính 1</caption>
     <caption2>UOM</caption2>
     <loai>1</loai>
     <ftype>C0</ftype>
@@ -39,8 +62,8 @@
     <notempty>true</notempty>
     <fdecimal>0</fdecimal>
     <visible>true</visible>
-    <fvvar>DVT</fvvar>
-    <fcolumn>DVT</fcolumn>
+    <fvvar>DVT1</fvvar>
+    <fcolumn>DVT1</fcolumn>
     <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>0d6d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
@@ -67,11 +90,34 @@
     <fdecimal>0</fdecimal>
     <visible>true</visible>
     <fvvar>MA_KHO</fvvar>
-    <fcolumn>MA_KHO_I</fcolumn>
+    <fcolumn>MA_KHOI</fcolumn>
     <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>0e6d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
     <MA_DM0>0E6D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
+  </Table>
+  <Table>
+    <stt_forder>5</stt_forder>
+    <ma_ct>SOH</ma_ct>
+    <ma_dm>ALKHO</ma_dm>
+    <caption>Mã kho</caption>
+    <caption2>WH</caption2>
+    <loai>1</loai>
+    <ftype>C0</ftype>
+    <forder>4</forder>
+    <width>80</width>
+    <carry>0</carry>
+    <fstatus>true</fstatus>
+    <checkvvar>true</checkvvar>
+    <notempty>true</notempty>
+    <fdecimal>0</fdecimal>
+    <visible>true</visible>
+    <fvvar></fvvar>
+    <fcolumn>TEN_KHO</fcolumn>
+    <lstatus>1,2</lstatus>
+    <fstatus2>true</fstatus2>
+    <UID>0e6d8ad8-8275-e611-a4ab</UID>
+    <MA_DM0>0E6D8AD8-8275-E611-A4AB</MA_DM0>
   </Table>
   <Table>
     <stt_forder>11</stt_forder>
@@ -320,7 +366,7 @@
     <checkvvar>false</checkvvar>
     <notempty>false</notempty>
     <fdecimal>0</fdecimal>
-    <visible>false</visible>
+    <visible>true</visible>
     <fvvar />
     <fcolumn>DVT</fcolumn>
     <lstatus>1,2</lstatus>
@@ -329,26 +375,72 @@
     <MA_DM0>1D6D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
   </Table>
   <Table>
-    <stt_forder>68</stt_forder>
+    <stt_forder>53</stt_forder>
     <ma_ct>SOH</ma_ct>
-    <ma_dm>ALSP</ma_dm>
-    <caption>Mã Sp</caption>
-    <caption2>Product code</caption2>
+    <ma_dm></ma_dm>
+    <caption>Hệ số T</caption>
+    <caption2>Hệ số T</caption2>
     <loai>3</loai>
-    <ftype>C0</ftype>
-    <forder>68</forder>
+    <ftype>N0</ftype>
+    <forder>53</forder>
     <width>100</width>
     <carry>0</carry>
-    <fstatus>false</fstatus>
-    <checkvvar>true</checkvvar>
+    <fstatus>true</fstatus>
+    <checkvvar>false</checkvvar>
     <notempty>false</notempty>
     <fdecimal>0</fdecimal>
-    <visible>false</visible>
-    <fvvar>MA_VT</fvvar>
-    <fcolumn>MA_SP</fcolumn>
+    <visible>true</visible>
+    <fvvar></fvvar>
+    <fcolumn>HE_SO1T</fcolumn>
+    <lstatus></lstatus>
+    <fstatus2>true</fstatus2>
+    <UID>f</UID>
+    <MA_DM0>FD6C8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
+  </Table>
+  <Table>
+    <stt_forder>54</stt_forder>
+    <ma_ct>SOH</ma_ct>
+    <ma_dm></ma_dm>
+    <caption>Hệ số M</caption>
+    <caption2>Hệ số M</caption2>
+    <loai>3</loai>
+    <ftype>N0</ftype>
+    <forder>54</forder>
+    <width>100</width>
+    <carry>0</carry>
+    <fstatus>true</fstatus>
+    <checkvvar>false</checkvvar>
+    <notempty>false</notempty>
+    <fdecimal>0</fdecimal>
+    <visible>true</visible>
+    <fvvar></fvvar>
+    <fcolumn>HE_SO1M</fcolumn>
+    <lstatus></lstatus>
+    <fstatus2>true</fstatus2>
+    <UID>f</UID>
+    <MA_DM0>FD6C8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
+  </Table>
+  <Table>
+    <stt_forder>55</stt_forder>
+    <ma_ct>SOH</ma_ct>
+    <ma_dm>SO_LUONG</ma_dm>
+    <caption>Số lượng</caption>
+    <caption2>Quantity</caption2>
+    <loai>1</loai>
+    <ftype>N2</ftype>
+    <forder>55</forder>
+    <width>100</width>
+    <carry>0</carry>
+    <fstatus>true</fstatus>
+    <checkvvar>true</checkvvar>
+    <notempty>true</notempty>
+    <fdecimal>3</fdecimal>
+    <visible>true</visible>
+    <fvvar />
+    <fcolumn>SO_LUONG</fcolumn>
     <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
-    <UID>fd6c8ad8-8275-e611-a4ab-3085a9b1d695</UID>
-    <MA_DM0>FD6C8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
+    <UID>106d8ad8</UID>
+    <MA_DM0>106D8AD8</MA_DM0>
   </Table>
 </NewDataSet>

@@ -205,7 +205,9 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           children: [
             TextField(controller: userController, decoration: const InputDecoration(labelText: 'UserName')),
-            TextField(controller: passController, decoration: const InputDecoration(labelText: 'Password',)),
+            TextField(controller: passController, decoration: const InputDecoration(labelText: 'Password',),
+              obscureText: true,
+            ),
             //TextField(controller: baseController, decoration: const InputDecoration(labelText: 'BaseUnitCode')),
             const SizedBox(height: 20),
             ElevatedButton(
