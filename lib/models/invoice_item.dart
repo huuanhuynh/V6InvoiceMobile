@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:v6_invoice_mobile/h.dart';
 
 class InvoiceItem {
@@ -17,18 +18,22 @@ class InvoiceItem {
     }
   }
 
-  dynamic operator [](String key) => data[key];
-  void operator []=(String key, dynamic value) => data[key] = value;
+  //dynamic operator [](String key) => data[key];
+  //void operator []=(String key, dynamic value) => data[key] = value;
 
   String getString(String fieldV6){
     return H.objectToString(H.getValue(data, fieldV6, defaultValue: ''));
   }
-
-  
-
-  double getDouble(String fieldV6)
+  int getInt(String fieldV6)
   {
-    return H.getDouble(data, fieldV6, defaultValue: 0);
+    return H.getInt(data, fieldV6, defaultValue: 0);
+  }
+  Decimal getDecimal(String fieldV6)
+  {
+    return H.getDecimal(data, fieldV6, defaultValue: 0);
+  }
+  void setValue(String fieldV6, dynamic value){
+    H.setValue(data, fieldV6, value);
   }
   /// Các trường dữ liệu chi tiết của InvoiceItem, ánh xạ từ fieldV6 sang fieldAPI
   Map<String, String> mapper = {
@@ -40,14 +45,18 @@ class InvoiceItem {
     'DVT1': 'dvt1',
     'MA_KHO': 'maKho',
     'TEN_KHO': 'tenKho',
-    'MA_KHOI': 'maKhoI',
+    'MA_KHO_I': 'maKhoI',
     'SO_LUONG': 'soLuong',
     'SO_LUONG1': 'soLuong1',
+    'GIA_NT21': 'giaNt21',
     'GIA_NT2': 'giaNt2',
+    'GIA2': 'gia2',
     'TIEN_NT2': 'tienNt2',
+    'TIEN2': 'tien2',
     'THUE': 'thue',
     'THUE_NT': 'thueNt',
     'MA_THUE': 'maThue',
+    'MA_THUE_I': 'maThueI',
     'GHI_CHU': 'ghiChu',
   };
   String fieldAPI(String fieldV6){

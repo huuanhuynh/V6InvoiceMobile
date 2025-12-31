@@ -9,12 +9,14 @@ class CatalogPage extends StatefulWidget {
   final String fvvar;
   final String type;
   final String? filterValue;
+  final String advance;
 
   const CatalogPage({
     super.key,
     required this.fvvar,
     required this.type,
-    this.filterValue
+    this.filterValue,
+    this.advance = '',
   });
 
   @override
@@ -22,17 +24,18 @@ class CatalogPage extends StatefulWidget {
 }
 
 class _CatalogPageState extends State<CatalogPage> {
+  bool loading = false;
+  String? error;
   int pageIndex = 1; int totalPages = 0; int totalRows = 0;
   int pageSize = 20;
   bool hasMorePage = false; bool hasPreviousPage = false;
+  
+  Map<String, dynamic>? selectedData;
   Map<String, dynamic> lookupInfo = {};
-  //List<dynamic> items = [];
-  Map<String, dynamic>? selectedItem;
-  bool loading = false;
-  String? error;
+  
   String filterValue = '';
   final TextEditingController _filterCtrl = TextEditingController();
-  final ValueNotifier<List<dynamic>> itemsNotifier = ValueNotifier([]);
+  final ValueNotifier<List<Map<String, dynamic>>> itemsNotifier = ValueNotifier([]);
   Timer? _debounceTimer;
   
   @override
@@ -74,17 +77,18 @@ class _CatalogPageState extends State<CatalogPage> {
         type: widget.type,
         pageIndex: pageIndex,
         pageSize: pageSize,
+        advance: widget.advance,
       );
       if (apiResponse.error == null){
         final parsed = apiResponse.data;
-        final list = parsed is List ? parsed : (parsed['items'] ?? parsed['data'] ?? []);
+        List<dynamic> listData = parsed is List ? parsed : (parsed['items'] ?? parsed['data'] ?? []);
         //int pageNumber = parsed['pageNumber'];
         totalPages = parsed['totalPages'];
         totalRows = parsed['totalRows'];
         hasMorePage = parsed['hasNextPage'];
         hasPreviousPage = parsed['hasPreviousPage'];
         lookupInfo = parsed['lookupInfo'] ?? {};
-        itemsNotifier.value = List.from(list); // chỉ cập nhật bảng
+        itemsNotifier.value = List.from(listData); // chỉ cập nhật bảng
       }
       else{
         error = apiResponse.error;
@@ -113,22 +117,20 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 
   void _viewItem() {
-    if (selectedItem != null) {
-      Navigator.pushNamed(context, '/catalog/view', arguments: selectedItem);
+    if (selectedData != null) {
+      Navigator.pushNamed(context, '/catalog/view', arguments: selectedData);
     }
   }
 
   void _editItem() {
-    if (selectedItem != null) {
-      Navigator.pushNamed(context, '/catalog/edit', arguments: selectedItem);
+    if (selectedData != null) {
+      Navigator.pushNamed(context, '/catalog/edit', arguments: selectedData);
     }
   }
 
-  // Hàm mới: Trả về selectedItem và đóng trang
   void _selectItem() {
-    if (selectedItem != null) {
-      // Trả về item đã chọn (Map<String, dynamic>)
-      Navigator.pop(context, {"selectedItem": selectedItem, "lookupInfo": lookupInfo});
+    if (selectedData != null) {
+      Navigator.pop(context, {"selectedData": selectedData, "lookupInfo": lookupInfo});
     } else {
       // Thông báo nếu chưa chọn item nào
       ScaffoldMessenger.of(context).showSnackBar(
@@ -148,7 +150,7 @@ class _CatalogPageState extends State<CatalogPage> {
           // NÚT NHẬN MỚI
           IconButton(
            icon: const Icon(Icons.check), 
-             onPressed: selectedItem != null ? _selectItem : null, // Chỉ cho phép nhận khi đã chọn
+             onPressed: selectedData != null ? _selectItem : null, // Chỉ cho phép nhận khi đã chọn
           ),
           IconButton(icon: const Icon(Icons.visibility), onPressed: _viewItem),
           IconButton(icon: const Icon(Icons.edit), onPressed: _editItem),
@@ -183,7 +185,7 @@ class _CatalogPageState extends State<CatalogPage> {
 
           // 👇 Chỉ phần này rebuild khi itemsNotifier.value thay đổi
           Expanded(
-            child: ValueListenableBuilder<List<dynamic>>(
+            child: ValueListenableBuilder<List<Map<String, dynamic>>>(
               valueListenable: itemsNotifier,
               builder: (context, items, _) {
                 if (error != null) {
@@ -229,11 +231,21 @@ class _CatalogPageState extends State<CatalogPage> {
   List<DataRow> _buildRows(List<dynamic> items, Color selectedColor) {
     return items.map((item) {
       final map = item as Map<String, dynamic>;
-      final selected = selectedItem == item;
+      final isSelected = selectedData == item;
 
       // 1. TẠO CÁC Ô DỮ LIỆU ĐÃ BỌC BẰNG GESTUREDETECTOR
       final cellsWithTap = map.values.map((v) {
         return DataCell(
+          onTap: () => {
+            if (isSelected){
+              _selectItem()
+            }
+            else{
+              setState(() {
+                selectedData = item; // Chọn hàng này khi nhấn vào ô
+              }),
+            }
+          },
           // Bọc nội dung bằng GestureDetector để bắt sự kiện double-tap
           GestureDetector(
             // Kích hoạt khi có double-click/double-tap
@@ -242,7 +254,7 @@ class _CatalogPageState extends State<CatalogPage> {
               // LƯU Ý: Vì đang ở trong hàm map, ta cần đảm bảo logic setState là an toàn.
               // Tốt nhất là gọi setState để cập nhật selectedItem, sau đó gọi _selectItem.
               setState(() {
-                selectedItem = item; // Chọn hàng này
+                selectedData = item; // Chọn hàng này
                 // Ngay sau khi setState, gọi _selectItem
                 _selectItem();
               });
@@ -259,12 +271,13 @@ class _CatalogPageState extends State<CatalogPage> {
 
 
       return DataRow(
-        color: WidgetStatePropertyAll(selected ? selectedColor : null),
-        selected: selected,
+        color: WidgetStatePropertyAll(isSelected ? selectedColor : null),
+        selected: isSelected,
         // 2. GIỮ onSelectChanged cho chức năng chọn một lần
         onSelectChanged: (_) {
-          setState(() => selectedItem = item);
+          setState(() => selectedData = item);
         },
+        
         // 3. Sử dụng danh sách DataCell đã tích hợp double-tap
         cells: cellsWithTap,
       );

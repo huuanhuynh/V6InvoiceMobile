@@ -7,8 +7,8 @@ import 'package:v6_invoice_mobile/pages/catalog_page.dart';
 import 'package:v6_invoice_mobile/h.dart';
 
 // Định nghĩa typedef cho onChanged để tương thích với hàm _handleFieldChange
-typedef FieldChangeCallback = void Function(V6VvarTextBox sender, String newValue);
-typedef FieldLookedCallback = void Function(V6VvarTextBox sender, Map<String, dynamic> selectedItem);
+typedef ValueChangedCallback = void Function(V6VvarTextBox sender, String newValue, bool isLookup);
+typedef VvarLookedCallback = void Function(V6VvarTextBox sender, Map<String, dynamic> selectedData);
 
 class V6VvarTextBox extends StatefulWidget {
   // --- THUỘC TÍNH MỚI/CẤU HÌNH ---
@@ -22,10 +22,9 @@ class V6VvarTextBox extends StatefulWidget {
   
   // --- THUỘC TÍNH CỦA TEXTFIELD/FORM FIELD ---
   final TextBoxC controller;
-  final FieldChangeCallback? onChanged;
-  final FieldLookedCallback? onLooked;
-  final Map<String, String>? configTables;
-  Map<String, dynamic>? lookupInfo;
+  final ValueChangedCallback? onChanged;
+  final VvarLookedCallback? onLooked;
+  final Map<String, dynamic>? configTables;
   
   V6VvarTextBox({
     super.key,
@@ -41,6 +40,8 @@ class V6VvarTextBox extends StatefulWidget {
     this.onLooked,
     this.configTables
   });
+  
+  bool get haveVvar => vvar != null && vvar!.isNotEmpty;
 
   @override
   State<V6VvarTextBox> createState() => _V6VvarTextBoxState();
@@ -51,44 +52,41 @@ class _V6VvarTextBoxState extends State<V6VvarTextBox> {
   // Hàm mở CatalogPage và nhận kết quả (đã chuyển logic từ ItemEditPage sang)
   Future<void> _openCatalogLookup() async {
     // 1. Kiểm tra fvvar trước
-    if (widget.vvar == null || widget.vvar!.isEmpty) {
+    if (!widget.haveVvar) {
       return; // Không phải trường lookup
     }
     
-    // Lấy giá trị hiện tại của ô nhập liệu (để lọc trước)
-    final currentFilterValue = widget.noFilter ? null : widget.controller.text.trim();
-    
-    // 2. Mở CatalogPage và đợi kết quả (selectedItem)
+    final filterValue = widget.noFilter ? null : widget.controller.text.trim();
+    // Mở CatalogPage và đợi kết quả (selectedItem)
     final selectResult = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
         builder: (_) => CatalogPage(
-          fvvar: widget.vvar!, 
+          fvvar: widget.vvar!,
           type: '2', 
-          filterValue: currentFilterValue,
+          filterValue: filterValue,
+          advance: widget.controller.advanceFilter ?? '',
         ),
       ),
     );
 
-    // 3. Xử lý kết quả trả về
+    // Xử lý kết quả trả về
     if (selectResult != null) {
-      final selectedItem = selectResult['selectedItem'];
-      final lookupInfo = selectResult['lookupInfo'];
-      String fieldKey = lookupInfo == null ? widget.fieldKey : (lookupInfo['vvalue'] ?? widget.fieldKey);
-      widget.controller.tag = selectedItem;
-      widget.lookupInfo = lookupInfo;
-      final valueToSet = H.getValue(selectedItem, fieldKey, defaultValue: null);
+      Map<String, dynamic> selectedData = selectResult['selectedData'];
+      Map<String, dynamic>? lookupInfo = selectResult['lookupInfo'];
+      widget.controller.lookupInfo = lookupInfo;
+      widget.controller.data = selectedData;
+      String valueField = lookupInfo == null ? widget.fieldKey : (lookupInfo['vvalue'] ?? widget.fieldKey);
+      final valueToSet = H.objectToString(H.getValue(selectedData, valueField, defaultValue: null));
+      widget.controller.text = valueToSet;
+      widget.controller.dataKey = valueToSet;
 
-      if (valueToSet != null) {
-        widget.controller.text = H.objectToString(valueToSet);
-        
-        // 4. Gọi onChanged để thông báo cho Widget cha (ItemEditPage) tính toán lại
-        if (widget.onLooked != null) {
-          widget.onLooked!(widget, selectedItem);
-        }
-        if (widget.onChanged != null) {
-          widget.onChanged!(widget, widget.controller.text);
-        }
+      // Gọi onLooked onChanged để thông báo cho Widget cha (ItemEditPage) tính toán lại
+      if (widget.onLooked != null) {
+        widget.onLooked!(widget, widget.controller.data!);
+      }
+      if (widget.onChanged != null) {
+        widget.onChanged!(widget, widget.controller.text, true);
       }
     }
   }
@@ -117,7 +115,7 @@ class _V6VvarTextBoxState extends State<V6VvarTextBox> {
   @override
   Widget build(BuildContext context) {
     // Xác định icon tra cứu
-    final lookupIcon = (widget.vvar != null && widget.vvar!.isNotEmpty)
+    final lookupIcon = (widget.haveVvar)
         ? IconButton(
             icon: const Icon(Icons.search),
             onPressed: widget.enabled ? _openCatalogLookup : null,
@@ -130,7 +128,7 @@ class _V6VvarTextBoxState extends State<V6VvarTextBox> {
     return TextFormField(
       enabled: widget.enabled,
       controller: widget.controller,
-      onChanged: (value) => widget.onChanged?.call(widget, value),
+      onChanged: (value) => widget.onChanged?.call(widget, value, false),
       validator: _validator,
       
       keyboardType: isNumeric

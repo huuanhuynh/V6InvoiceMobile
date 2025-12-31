@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:decimal/decimal.dart';
 import 'package:intl/intl.dart';
 
 /// Lớp hỗ trợ chuyển đổi và định dạng dữ liệu
@@ -31,6 +32,29 @@ class H {
     return numberString;
   }
 
+  static String decimalToString(
+    Decimal number,
+    int decimals,
+    String decimalSeparator, {
+    String thousandSeparator = ' ',
+    bool show0 = false,
+  }) {
+    if (number == 0 && !show0) return '';
+    if (decimalSeparator.isEmpty) {
+      throw Exception('DecimalSeparator empty.');
+    }
+
+    final fmt = NumberFormat()
+      ..minimumFractionDigits = decimals
+      ..maximumFractionDigits = decimals;
+
+    var numberString = fmt.format(number);
+    numberString = numberString.replaceAll('.', '#');
+    numberString = numberString.replaceAll(',', thousandSeparator);
+    numberString = numberString.replaceAll('#', decimalSeparator);
+    return numberString;
+  }
+
   static String numberToStringObj(
     dynamic number,
     int decimals,
@@ -38,7 +62,7 @@ class H {
     String thousandSeparator = ' ',
     bool show0 = false,
   }) {
-    return numberToString(objectToDecimal(number), decimals, decimalSeparator,
+    return decimalToString(objectToDecimal(number), decimals, decimalSeparator,
         thousandSeparator: thousandSeparator, show0: show0);
   }
 
@@ -103,7 +127,21 @@ class H {
     return s == '1' || s == 'true' || s == 'yes';
   }
 
-  static double objectToDecimal(dynamic o) {
+  static Decimal objectToDecimal(dynamic o) {
+    if (o == null) return Decimal.zero;
+    if (o is bool) return o ? Decimal.one : Decimal.zero;
+    if (o is num) return Decimal.parse(o.toString());
+    if (o is DateTime) return Decimal.fromInt(o.dayOfYear);
+
+    String str = o.toString().toLowerCase();
+    if (str == 'true' || str == 'yes') return Decimal.one;
+    if (str == 'false' || str == 'no' || str == '') return Decimal.zero;
+    str = stringToSystemDecimalSymbolStringNumber(str);
+
+    return Decimal.parse(str);
+  }
+
+  static double objectToDouble(dynamic o) {
     if (o == null) return 0;
     if (o is bool) return o ? 1 : 0;
     if (o is num) return o.toDouble();
@@ -113,7 +151,7 @@ class H {
     return double.tryParse(str) ?? 0;
   }
 
-  static double objectToFloat(dynamic o) => objectToDecimal(o);
+  
 
   static int objectToInt(dynamic o) {
     if (o == null) return 0;
@@ -184,11 +222,12 @@ class H {
 
   /// lấy giá trị trong map với key không phân biệt hoa thường
   static dynamic getValue(
-    Map<String, dynamic> map, 
+    Map<String, dynamic>? map, 
     String key, {
     dynamic defaultValue,
   }) {
     key = key.toLowerCase();
+    if (map == null) return defaultValue;
     for (final mapKey in map.keys) {
       if (mapKey.toLowerCase() == key) {
         return map[mapKey];
@@ -198,7 +237,16 @@ class H {
     return defaultValue;
   }
 
+  static String getString(Map<String, dynamic> map, String key, {String defaultValue = ''}) {
+    final value = getValue(map, key, defaultValue: defaultValue);
+    return objectToString(value);
+  }
+
   static double getDouble(Map<String, dynamic> map, String key, {double defaultValue = 0}) {
+    final value = getValue(map, key, defaultValue: defaultValue);
+    return objectToDouble(value);
+  }
+  static Decimal getDecimal(Map<String, dynamic> map, String key, {num defaultValue = 0}) {
     final value = getValue(map, key, defaultValue: defaultValue);
     return objectToDecimal(value);
   }
@@ -226,7 +274,7 @@ class H {
     }
   }
 
-  static void setDouble(Map<String, dynamic> map, String key, double value) {
+  static void setDecimal(Map<String, dynamic> map, String key, Decimal value) {
     setValue(map, key, value);
   }
 

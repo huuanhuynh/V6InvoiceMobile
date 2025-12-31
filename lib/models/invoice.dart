@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:v6_invoice_mobile/h.dart';
 
 import 'data_handler.dart';
@@ -126,8 +127,8 @@ class Invoice implements DataHandler {
     return H.objectToString(H.getValue(dataV6, fieldV6, defaultValue: ''));
   }
   @override
-  double getDouble(String fieldV6){
-    return H.getDouble(dataV6, fieldV6, defaultValue: 0);
+  Decimal getDecimal(String fieldV6){
+    return H.getDecimal(dataV6, fieldV6);
   }
   @override
   DateTime? getDate(String fieldV6){
@@ -145,45 +146,90 @@ class Invoice implements DataHandler {
 
   
 
-  double get tSoLuong1 {
-    double total = 0;
+  Decimal get tSoLuong1 {
+    Decimal total = Decimal.zero;
     for (var item in detailDatas) {
-      total += item.getDouble('SO_LUONG1');
+      total += item.getDecimal('SO_LUONG1');
     }
     return total;
   }
 
-  double get tSoLuong{
-    double total = 0;
+  Decimal get tSoLuong{
+    Decimal total = Decimal.zero;
     for (var item in detailDatas) {
-      total += item.getDouble('SO_LUONG');
+      total += item.getDecimal('SO_LUONG');
     }
     return total;
   }
-  double get tTien2 {
-    double total = 0;
+  Decimal get tTien2 {
+    Decimal total = Decimal.zero;
     for (var item in detailDatas) {
-      total += item.getDouble('TIEN_NT2');
-    }
-    return total;
-  }
-
-  double get tThueNt {
-    double total = 0;
-    for (var item in detailDatas) {
-      total += item.getDouble('THUE_NT');
+      total += item.getDecimal('TIEN_NT2');
     }
     return total;
   }
 
-  double get tTT {
+  Decimal get tThueNt {
+    Decimal total = Decimal.zero;
+    for (var item in detailDatas) {
+      total += item.getDecimal('THUE_NT');
+    }
+    return total;
+  }
+
+  Decimal get tTT {
     return tTien2 + tThueNt;
   }
 
-  void calculateTotals() {
-    // In this simple model, totals are calculated on-the-fly using getters.
-    // If you need to store totals, you can implement that logic here.
-    
+  bool get isCkChung{
+    return H.objectToBool(H.getValue(dataV6, 'LOAI_CK', defaultValue: 0));
+  }
+  bool get isThueChung{
+    return H.objectToBool(H.getValue(dataV6, 'SUA_THUE', defaultValue: 0));
+  }
+
+  /// Tính tổng thanh toán và cập nhật vào dataV6, phải đảm bảo các giá trị liên quan (ty_gia, thue_suat ) đã cập nhật.
+  void tinhTongThanhToan() {
+    try {
+      Decimal tyGia = H.getDecimal(dataV6, 'TY_GIA', defaultValue: 1);
+      // Tính tổng values, 
+      Decimal tTienHangNT = Decimal.zero;
+      Decimal tThueNT = Decimal.zero;
+      Decimal tCkNT = Decimal.zero;
+      Decimal tSoLuong = Decimal.zero;
+      for (var item in detailDatas) {
+        tTienHangNT += H.getDecimal(item.data, 'TIEN_NT', defaultValue: 0);
+        tThueNT += H.getDecimal(item.data, 'THUE_NT', defaultValue: 0);
+        tCkNT += H.getDecimal(item.data, 'CK_NT', defaultValue: 0);
+        tSoLuong += H.getDecimal(item.data, 'SO_LUONG', defaultValue: 0);
+      }
+      // Nhân tỷ giá
+      Decimal tTienHang = tTienHangNT * tyGia;
+      Decimal tThue = tThueNT * tyGia;
+      Decimal tCk = tCkNT * tyGia;
+      // Tính chiết khấu
+      if (isCkChung){
+        Decimal ckChungPercent = H.getDecimal(dataV6, 'PT_CK', defaultValue: 0);
+        tCkNT = (tTienHangNT * ckChungPercent) * Decimal.parse("0.01");
+        tCk = tCkNT * tyGia;
+      }
+      // Tính giảm giá
+
+      // Tính thuế
+      if (isThueChung){
+        tThueNT = (tTienHangNT - tCkNT) * (H.getDecimal(dataV6, 'THUE_SUAT', defaultValue: 0) * Decimal.parse("0.01"));
+      }
+      // Cập nhật tổng vào dataV6
+      H.setValue(dataV6, 'T_TIEN_NT2', tTienHangNT);
+      H.setValue(dataV6, 'T_TIEN2', tTienHang);
+      H.setValue(dataV6, 'T_THUE_NT', tThueNT);
+      H.setValue(dataV6, 'T_THUE', tThue);
+      H.setValue(dataV6, 'T_CK_NT', tCkNT);
+      H.setValue(dataV6, 'T_CK', tCk);
+
+    } catch (e) {
+      //print('Error in calculateTotals: $e');
+    }
   }
 
   /// Gán giá trị vào Invoice theo fieldV6, dataAPI sẽ được mapping sang fieldAPI.
@@ -193,8 +239,8 @@ class Invoice implements DataHandler {
   }
   /// Gán giá trị vào Invoice theo fieldV6, dataAPI sẽ được mapping sang fieldAPI.
   @override
-  void setDouble(fieldV6, double value) {
-    H.setDouble(dataV6, fieldV6, value);
+  void setDecimal(fieldV6, Decimal value) {
+    H.setDecimal(dataV6, fieldV6, value);
   }
   /// Gán giá trị vào Invoice theo fieldV6, dataAPI sẽ được mapping sang fieldAPI.
   @override

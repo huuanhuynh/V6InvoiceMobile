@@ -10,20 +10,21 @@ import 'package:v6_invoice_mobile/services/api_service.dart';
 /// Quản lý dữ liệu hóa đơn trong ứng dụng.
 class InvoiceRepository extends ChangeNotifier {
   final List<Invoice> _invoices = [];
+  final List<Map<String, dynamic>> _alct1SOH = [];
   List<Invoice> get invoices => List.unmodifiable(_invoices);
   PagingInfo pagingInfo = PagingInfo();
 
   InvoiceRepository() {
     // Tải với giá trị mặc định khi khởi tạo
-    searchInvoiceList();
+    //searchInvoiceList();
   }
 
-  // 1. Thay đổi kiểu trả về thành Future<List<Invoice>>
+  // Thay đổi kiểu trả về thành Future<List<Invoice>>
   Future<List<Invoice>> searchInvoiceList({
     DateTime? from,
     DateTime? to,
     String? searchValue,
-  }) async { // 2. Thêm từ khóa 'async'
+  }) async {
     final today = DateTime.now();
     var searhFrom = from ?? today.subtract(const Duration(days: 7));
     var searchTo = to ?? today;
@@ -135,6 +136,33 @@ class InvoiceRepository extends ChangeNotifier {
       }
       // Có thể ném lỗi hoặc trả về danh sách rỗng tùy logic
       // throw Exception('Failed to load invoices'); 
+      return []; // Trả về list rỗng khi có lỗi
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAlct1ListSOH() async {
+    if (_alct1SOH.isNotEmpty) {
+      return _alct1SOH;
+    }
+    try {
+      final response = await ApiService.getAlct1Config(
+        mact: 'SOH',
+        magd: '',
+      );
+      // Logic chuyển đổi data
+      List<Invoice> fetchedInvoices = [];
+      if (response['configData'] != null) {
+        _alct1SOH.clear();
+        for (var item in response['configData']) {
+          _alct1SOH.add(item as Map<String, dynamic>);
+        }
+      }
+      return _alct1SOH;
+      
+    } catch (error) {
+      if (kDebugMode) {
+        print('Error getting config data: $error');
+      }
       return []; // Trả về list rỗng khi có lỗi
     }
   }

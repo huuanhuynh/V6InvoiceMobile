@@ -19,8 +19,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final userController = TextEditingController(text: 'admin');
   final passController = TextEditingController(text: 'HPC');
-  String? statusText;
-  bool loading = false;
+  String? _statusText;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -39,8 +39,8 @@ class _LoginScreenState extends State<LoginScreen> {
     const int pageSize = 100;
 
     setState(() {
-      loading = true; // Bật loading trong khi load danh mục
-      statusText = 'Đang tải danh mục...';
+      _isLoading = true; // Bật loading trong khi load danh mục
+      _statusText = 'Đang tải danh mục DVCS...';
     });
     
     try {
@@ -51,6 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
         type: type,
         pageIndex: pageIndex,
         pageSize: pageSize,
+        advance: '',
       );
 
       if (apiResponse.error == null && apiResponse.data != null) {
@@ -59,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final List<dynamic> listItems = parsed is List ? parsed : (parsed['items'] ?? parsed['data'] ?? []);
 
         setState(() {
-          loading = false; // Tắt loading để cho phép hiển thị dialog
+          _isLoading = false; // Tắt loading để cho phép hiển thị dialog
         });
 
         if (listItems.isNotEmpty) {
@@ -74,37 +75,35 @@ class _LoginScreenState extends State<LoginScreen> {
           } else {
             // Người dùng đóng Dialog mà không chọn
             setState(() {
-              statusText = 'Vui lòng chọn một đơn vị để tiếp tục.';
-              loading = false; // Đảm bảo loading là false
+              _statusText = 'Vui lòng chọn một đơn vị để tiếp tục.';
+              _isLoading = false; // Đảm bảo loading là false
             });
           }
         } else {
           setState(() {
-            statusText = 'Không tìm thấy danh mục đơn vị.';
+            _statusText = 'Không tìm thấy danh mục đơn vị.';
           });
         }
       } else {
         setState(() {
-          statusText = 'Lỗi tải danh mục: ${apiResponse.error ?? 'Unknown error'}';
+          _statusText = 'Lỗi tải danh mục: ${apiResponse.error ?? 'Unknown error'}';
         });
       }
 
     } catch (e) {
       setState(() {
-        statusText = 'Lỗi trong quá trình tải danh mục: $e';
+        _statusText = 'Lỗi trong quá trình tải danh mục: $e';
       });
     } finally {
       // Luôn đảm bảo loading được đặt lại, trừ khi đã chuyển hướng thành công
-      if (loading) {
+      if (_isLoading) {
         setState(() {
-            loading = false;
+            _isLoading = false;
         });
       }
     }
   }
 
-  // lib/screens/login_screen.dart (Thêm vào cuối file hoặc trong một file helper)
-  // Hàm hiển thị Dialog và chờ kết quả chọn
   Future<Map<String, dynamic>?> showCatalogSelectionDialog(
       BuildContext context, List<dynamic> items) {
     
@@ -153,8 +152,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     setState(() {
-      loading = true;
-      statusText = null;
+      _isLoading = true;
+      _statusText = null;
     });
     String userName = userController.text.trim();
     String password = passController.text.trim();
@@ -164,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final fresponse = ApiService.login(username: userName, password: password);
       var apiResponse = await fresponse;
       setState(() {
-        statusText = '${apiResponse.response}';
+        _statusText = '${apiResponse.response}';
       });
 
       if (apiResponse.response != null && apiResponse.response!.statusCode == 200) {
@@ -177,13 +176,13 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else {
         setState(() {
-          statusText = 'Đăng nhập thất bại: ${apiResponse.response?.statusCode}';
+          _statusText = 'Đăng nhập thất bại: ${apiResponse.response?.statusCode}';
         });
       }
 
     } catch (e) {
       setState(() {
-        statusText = 'Error: $e';
+        _statusText = 'Error: $e';
       });
       // Bỏ qua dòng này khi deploy thật
       // _fakeLogin(); 
@@ -191,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       // Đảm bảo loading là false ở cuối cùng
       setState(() {
-        loading = false;
+        _isLoading = false;
       });
     }
   }
@@ -211,16 +210,16 @@ class _LoginScreenState extends State<LoginScreen> {
             //TextField(controller: baseController, decoration: const InputDecoration(labelText: 'BaseUnitCode')),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: loading ? null : _login,
-              child: loading
+              onPressed: _isLoading ? null : _login,
+              child: _isLoading
                   ? const CircularProgressIndicator()
                   : const Text('Đăng nhập'),
             ),
             const SizedBox(height: 20),
-            if (statusText != null)
+            if (_statusText != null)
               Expanded(
                 child: SelectableText(
-                  statusText!,
+                  _statusText!,
                   style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
                 ),
               ),

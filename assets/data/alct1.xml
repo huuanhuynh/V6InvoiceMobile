@@ -77,7 +77,7 @@
     <stt_forder>4</stt_forder>
     <ma_ct>SOH</ma_ct>
     <ma_dm>ALKHO</ma_dm>
-    <caption>Mã kho</caption>
+    <caption>Mã kho i</caption>
     <caption2>WH</caption2>
     <loai>1</loai>
     <ftype>C0</ftype>
@@ -90,7 +90,7 @@
     <fdecimal>0</fdecimal>
     <visible>true</visible>
     <fvvar>MA_KHO</fvvar>
-    <fcolumn>MA_KHOI</fcolumn>
+    <fcolumn>MA_KHO_I</fcolumn>
     <lstatus>1,2</lstatus>
     <fstatus2>true</fstatus2>
     <UID>0e6d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
@@ -100,7 +100,7 @@
     <stt_forder>5</stt_forder>
     <ma_ct>SOH</ma_ct>
     <ma_dm>ALKHO</ma_dm>
-    <caption>Mã kho</caption>
+    <caption>Tên kho</caption>
     <caption2>WH</caption2>
     <loai>1</loai>
     <ftype>C0</ftype>
@@ -189,54 +189,6 @@
     <MA_DM0>136D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
   </Table>
   <Table>
-    <stt_forder>21</stt_forder>
-    <ma_ct>SOH</ma_ct>
-    <ma_dm>ALTHUE</ma_dm>
-    <caption>Mã thuế i</caption>
-    <caption2>Tax</caption2>
-    <loai>3</loai>
-    <ftype>C0</ftype>
-    <forder>21</forder>
-    <width>100</width>
-    <carry>0</carry>
-    <fstatus>true</fstatus>
-    <checkvvar>true</checkvvar>
-    <notempty>true</notempty>
-    <fdecimal>0</fdecimal>
-    <visible>true</visible>
-    <fvvar>MA_THUE</fvvar>
-    <fcolumn>MA_THUE_I</fcolumn>
-    <lstatus>1,2</lstatus>
-    <fstatus2>true</fstatus2>
-    <UID>e1580607-2d1c-e811-b8f4-3085a9b1d695</UID>
-    <DMETHOD />
-    <MA_DM0>E1580607-2D1C-E811-B8F4-3085A9B1D695</MA_DM0>
-  </Table>
-  <Table>
-    <stt_forder>25</stt_forder>
-    <ma_ct>SOH</ma_ct>
-    <ma_dm>THUE_SUAT_I</ma_dm>
-    <caption>Thuế suất i</caption>
-    <caption2>Rate</caption2>
-    <loai>1</loai>
-    <ftype>N9</ftype>
-    <forder>25</forder>
-    <width>100</width>
-    <carry>0</carry>
-    <fstatus>false</fstatus>
-    <checkvvar>true</checkvvar>
-    <notempty>false</notempty>
-    <fdecimal>6</fdecimal>
-    <visible>true</visible>
-    <fvvar />
-    <fcolumn>THUE_SUAT_I</fcolumn>
-    <lstatus>1,2</lstatus>
-    <fstatus2>true</fstatus2>
-    <UID>e0580607-2d1c-e811-b8f4-3085a9b1d695</UID>
-    <DMETHOD />
-    <MA_DM0>E0580607-2D1C-E811-B8F4-3085A9B1D695</MA_DM0>
-  </Table>
-  <Table>
     <stt_forder>36</stt_forder>
     <ma_ct>SOH</ma_ct>
     <ma_dm>TIEN_NT</ma_dm>
@@ -258,52 +210,6 @@
     <fstatus2>true</fstatus2>
     <UID>1c6d8ad8-8275-e611-a4ab-3085a9b1d695</UID>
     <MA_DM0>1C6D8AD8-8275-E611-A4AB-3085A9B1D695</MA_DM0>
-  </Table>
-  <Table>
-    <stt_forder>38</stt_forder>
-    <ma_ct>SOH</ma_ct>
-    <ma_dm>THUE_NT</ma_dm>
-    <caption>Thuế NT</caption>
-    <caption2>Tax amount FC</caption2>
-    <loai>1</loai>
-    <ftype>N2</ftype>
-    <forder>38</forder>
-    <width>100</width>
-    <carry>0</carry>
-    <fstatus>true</fstatus>
-    <checkvvar>true</checkvvar>
-    <notempty>false</notempty>
-    <fdecimal>2</fdecimal>
-    <visible>true</visible>
-    <fvvar />
-    <fcolumn>THUE_NT</fcolumn>
-    <lstatus>1,2</lstatus>
-    <fstatus2>true</fstatus2>
-    <UID>a4bddae6-2d1c-e811-b8f4-3085a9b1d695</UID>
-    <MA_DM0>A4BDDAE6-2D1C-E811-B8F4-3085A9B1D695</MA_DM0>
-  </Table>
-  <Table>
-    <stt_forder>42</stt_forder>
-    <ma_ct>SOH</ma_ct>
-    <ma_dm>THUE</ma_dm>
-    <caption>Thuế</caption>
-    <caption2>Tax amount</caption2>
-    <loai>1</loai>
-    <ftype>N2</ftype>
-    <forder>42</forder>
-    <width>100</width>
-    <carry>0</carry>
-    <fstatus>true</fstatus>
-    <checkvvar>true</checkvvar>
-    <notempty>false</notempty>
-    <fdecimal>2</fdecimal>
-    <visible>true</visible>
-    <fvvar />
-    <fcolumn>THUE</fcolumn>
-    <lstatus>1,2</lstatus>
-    <fstatus2>true</fstatus2>
-    <UID>a5bddae6-2d1c-e811-b8f4-3085a9b1d695</UID>
-    <MA_DM0>A5BDDAE6-2D1C-E811-B8F4-3085A9B1D695</MA_DM0>
   </Table>
   <Table>
     <stt_forder>50</stt_forder>

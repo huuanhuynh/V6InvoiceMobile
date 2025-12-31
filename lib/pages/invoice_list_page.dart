@@ -1,9 +1,9 @@
 // lib/pages/invoice_list_page.dart
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:v6_invoice_mobile/app_session.dart';
 import 'package:v6_invoice_mobile/core/config/app_colors.dart';
-import 'package:v6_invoice_mobile/h.dart';
 import 'package:v6_invoice_mobile/models/invoice.dart';
 import 'package:v6_invoice_mobile/models/paging_info.dart';
 import '../repository.dart';
@@ -20,7 +20,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
   DateTime? from;
   DateTime? to;
   final _ctrlKeyword = TextEditingController();
-  List<Invoice> _results = [];
+  List<Invoice> _invList = [];
   //int _currentPage = 1;
   PagingInfo _pageInfo = PagingInfo();
   bool loading = false;
@@ -29,20 +29,21 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
   void initState() {
     super.initState();
     from = to = DateTime.now();
-    _apiSearch();
+    from = from!.subtract(const Duration(days: 7));
+    _apiSearch2();
   }
 
   // Hàm tìm kiếm khi người dùng nhấn nút Tìm
   void _search() {
     final repo = context.read<InvoiceRepository>();
     final list = repo.search(from: from, to: to, keyword: _ctrlKeyword.text);
-    setState(() => _results = list);
+    setState(() => _invList = list);
   }
   /// Tìm bằng hàm chung của Trí_TM
   void _apiSearch() async {
     final repo = context.read<InvoiceRepository>();
     final list = await repo.searchInvoiceList(from: from, to: to, searchValue: _ctrlKeyword.text);
-    setState(() => _results = list);
+    setState(() => _invList = list);
   }
   /// Tìm bằng hàm riêng cho SOH của V6 Invoice
   void _apiSearch2() async {
@@ -56,7 +57,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     _pageInfo = repo.pagingInfo;
     setState(() {
       loading = false;
-      _results = list;
+      _invList = list;
     });
   }
   void _prevPage() {
@@ -173,14 +174,21 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
             child: RefreshIndicator(
               onRefresh: () async => _search(),
               child: ListView.builder(
-                itemCount: _results.length,
+                itemCount: _invList.length,
                 itemBuilder: (context, idx) {
-                  final inv = _results[idx];
+                  final inv = _invList[idx];
                   return ListTile(
-                    title: Text(inv.soCt),
-                    subtitle: Text('${inv.getString('TEN_KH')} • ${inv.ngayCt.toIso8601String().split('T')[0]}'),
-                    trailing: Text(inv.tSoLuong.toStringAsFixed(0)),
-                    onTap: ()=> editCurrentInvoice('SOH', inv),
+                    leading: CircleAvatar(
+                      backgroundColor: inv.canEdit ? AppColors.primary : AppColors.bottomTabsBackground,
+                      child: Text(inv.tSoLuong.toStringAsFixed(0), style: const TextStyle(color: Colors.white)),
+                    ),
+                    title: Text('${inv.soCt} • ${inv.ngayCt.toIso8601String().split('T')[0]}'),
+                    subtitle: Text('${inv.getString('TEN_KH')} ••• ${inv.
+                      detailDatas[0]?.getString('TEN_VT')} x ${inv.detailDatas[0]?.getDecimal('SO_LUONG').toStringAsFixed(0)}${inv.
+                      detailDatas.length > 1 ? ' .....' : ''}'),
+                    
+                    //trailing: Text(inv.tSoLuong.toStringAsFixed(0)),
+                    onTap: ()=> _invTap(inv),
                   );
                 },
               ),
@@ -281,7 +289,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     newInv.setString("MA_DVCS", AppSession.madvcs!);
     newInv.setString("KIEU_POST", "0");
     newInv.setString("MA_NT", "VND");
-    newInv.setDouble("TY_GIA", 1);
+    newInv.setDecimal("TY_GIA", 1.toDecimal());
     
     await Navigator.push(
       context,
@@ -296,10 +304,17 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => InvoicePage(mact: 'SOH', invoice: inv, mode: InvoiceMode.edit),
+        builder: (_) => InvoicePage(mact: 'SOH', invoice: inv, mode: inv.canEdit ? InvoiceMode.edit : InvoiceMode.view),
       ),
     );
     // Sau khi edit thông tin, _search sẽ cập nhập lại trạng thái danh sách
     _search();
   }
+
+  void _invTap(Invoice inv) {
+      editCurrentInvoice('SOH', inv);
+  }
+
+  
+  
 }

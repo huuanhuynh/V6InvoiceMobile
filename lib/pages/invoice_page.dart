@@ -1,4 +1,5 @@
 // lib/pages/invoice_page.dart
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:v6_invoice_mobile/controls/textboxc.dart';
@@ -74,6 +75,7 @@ class _InvoicePageState extends State<InvoicePage>
     _tabController = TabController(length: 4, vsync: this);
     invoice = widget._invoice;
     invoice.keepOldData();
+    _controllers[ControlField.ma_sonb]!.advanceFilter = "dbo.VFV_InList0('${widget.mact}',MA_CTNB,',')=1";
     // Load giá trị từ invoice vào controllers dựa theo ctrl.fieldName
     for (var ctrl in _controllers.values) {
       ctrl.loadValueFrom(invoice);
@@ -93,7 +95,7 @@ class _InvoicePageState extends State<InvoicePage>
 
   TextBoxD get ngayCtController => _controllers[ControlField.ngay_ct]! as TextBoxD;
   TextBoxN get tyGiaController => _controllers[ControlField.ty_gia]! as TextBoxN;
-  DateTime? get ngayCt => ngayCtController.getDate;
+  DateTime? get ngayCt => ngayCtController.dateValue;
   set tyGia(Object? value) {
     // 1. Chuyển đổi giá trị dynamic/Object? thành String đã định dạng
     //    Hàm H.objectToString sẽ xử lý null, double, int, v.v., và áp dụng định dạng.
@@ -105,9 +107,17 @@ class _InvoicePageState extends State<InvoicePage>
   }
 
   void _prepareEdit() {
-    invoice.keepOldData();
+    if (invoice.canEdit){
+      invoice.keepOldData();
     setState(() => mode = InvoiceMode.edit);
+    }
+    else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không có quyền sửa.')),
+      );
+    }
   }
+
   void _cancelEdit() {
     invoice.resetChanges();
     // Load lại giá trị từ invoice vào controllers dựa theo ctrl.fieldName
@@ -120,9 +130,8 @@ class _InvoicePageState extends State<InvoicePage>
   void _save() async {
     if (!_formKey.currentState!.validate()) return;
     // Cập nhập các giá trị AM.
-    for (var ctrl in _controllers.values) {
-      ctrl.setValueTo(invoice);
-    }
+    _updateFormValuesToInvoice();
+    
 
     final repo = context.read<InvoiceRepository>();
     try {
@@ -251,7 +260,7 @@ class _InvoicePageState extends State<InvoicePage>
   // }
   Future<void> _pickDate() async {
     var ngayCtController = _controllers[ControlField.ngay_ct] as TextBoxD;
-    final initialDate = ngayCtController.getDate ?? DateTime.now();
+    final initialDate = ngayCtController.dateValue ?? DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
@@ -267,33 +276,54 @@ class _InvoicePageState extends State<InvoicePage>
     }
   }
 
+  String _createNewSttRec0() {
+    final maxSttRec0 = invoice.detailDatas.map((e) => H.objectToInt(e.getInt('STT_REC0'))).fold<int>(0, (prev, element) => element > prev ? element : prev);
+    return (maxSttRec0 + 1).toString().padLeft(5, '0');
+  }
   void _addItem() async {
+    _updateFormValuesToInvoice();
+    var dataV6 = invoice.dataV6;
     final newItem = await Navigator.push<InvoiceItem>(
       context,
-      MaterialPageRoute(builder: (_) => const InvoiceItemEditPage()),
+      MaterialPageRoute(builder: (_) => InvoiceItemEditPage(dataAM: dataV6)),
     );
+
     if (newItem != null) {
+      // Check stt_rec0 unique
+      if (newItem.sttRec0.isEmpty) {
+        final newSttRec0 = _createNewSttRec0();
+        newItem.setValue('STT_REC0', newSttRec0);
+      }
       setState(() {
         invoice.addItem(newItem);
-        _calSummary();
+        _tinhTongThanhToan();
       });
       //context.read<InvoiceRepository>().addItem(invoice.id, item);
     }
   }
 
   void _editItem(InvoiceItem item) async {
+    if (mode == InvoiceMode.view){
+       return;
+    }
+    _updateFormValuesToInvoice();
+    var dataV6 = invoice.dataV6;
     final savedItem = await Navigator.push<InvoiceItem>(
       context,
-      MaterialPageRoute(builder: (_) => InvoiceItemEditPage(item: item)),
+      MaterialPageRoute(builder: (_) => InvoiceItemEditPage(invoiceItem: item, dataAM: dataV6)),
     );
     if (savedItem != null) {
+      if (savedItem.sttRec0.isEmpty) {
+        final newSttRec0 = _createNewSttRec0();
+        savedItem.setValue('STT_REC0', newSttRec0);
+      }
       setState(() {
         final index = invoice.detailDatas.indexOf(item);
 
         if (index != -1) {
           // Thay thế item cũ bằng item mới (result)
           //invoice.detailDatas[index] = savedItem; item đã được cập nhật trực tiếp trong trang edit
-          _calSummary();
+          _tinhTongThanhToan();
         }
       });
       //context.read<InvoiceRepository>().updateItem(invoice.id, result);
@@ -301,25 +331,35 @@ class _InvoicePageState extends State<InvoicePage>
   }
 
   void _deleteItem(InvoiceItem item) {
+    if (mode == InvoiceMode.view){
+       return;
+    }
     //context.read<InvoiceRepository>().deleteItem(invoice.id, item.id);
     setState(() {
       invoice.detailDatas.removeWhere((it) => it.sttRec0 == item.sttRec0);
-      _calSummary();
+      _tinhTongThanhToan();
     });
   }
 
-  void _calSummary() {
+  void _updateFormValuesToInvoice() {
+    for (var ctrl in _controllers.values) {
+      ctrl.setValueTo(invoice);
+    }
+  }
+
+  void _tinhTongThanhToan() {
     setState(() {
-      invoice.calculateTotals();
+      _updateFormValuesToInvoice();
+      invoice.tinhTongThanhToan();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    invoice = context
-        .watch<InvoiceRepository>()
-        .invoices
-        .firstWhere((i) => i.sttrec == invoice.sttrec, orElse: () => invoice);
+    // invoice = context
+    //     .watch<InvoiceRepository>()
+    //     .invoices
+    //     .firstWhere((i) => i.sttrec == invoice.sttrec, orElse: () => invoice);
 
     final title = mode == InvoiceMode.add
         ? 'Thêm chứng từ ${widget.mact}'
@@ -334,7 +374,7 @@ class _InvoicePageState extends State<InvoicePage>
           if (mode == InvoiceMode.view)
             IconButton(
               onPressed: _prepareEdit,
-              icon: const Icon(Icons.edit),
+              icon: invoice.canEdit ? const Icon(Icons.edit) : const Icon(Icons.edit_off),
             ),
           if (mode != InvoiceMode.view)
             IconButton(onPressed: _save, icon: const Icon(Icons.save)),
@@ -386,18 +426,19 @@ class _InvoicePageState extends State<InvoicePage>
                                 // Cột 1: Mã số nội bộ
                                 Expanded(
                                   child:
-                                  V6VvarTextBox(label: 'Mã nội bộ', fieldKey: 'MA_SONB', ftype: 'ftype', controller: _controllers[ControlField.ma_sonb]!,
+                                  V6VvarTextBox(label: 'Mã nội bộ', fieldKey: 'MA_SONB', ftype: 'C0',
+                                    controller: _controllers[ControlField.ma_sonb]!,
                                     vvar: 'MA_SONB',
                                     isRequired: true,
                                     enabled: mode != InvoiceMode.view,
-                                    onLooked: (sender, selectedItem) {
-                                      String mact = H.getValue(selectedItem, 'MA_CTNB', defaultValue: '').toString();
+                                    onLooked: (sender, selectedData) {
+                                      String mact = H.getValue(selectedData, 'MA_CTNB', defaultValue: '').toString();
                                       if (mact.isNotEmpty) {
                                         invoice.setString('MA_CT', mact);
                                       }
-                                      _controllers[ControlField.so_ct]!.text = mact + '-001'; // Ví dụ gán số chứng từ mặc định
+                                      _controllers[ControlField.so_ct]!.setValue('$mact-GEN001');
                                     },
-                                    onChanged: (fieldKey, newValue) {
+                                    onChanged: (fieldKey, newValue, isLookup) {
                                       // Xử lý khi mã nội bộ thay đổi (nếu cần)
                                     },
                                   ),
@@ -453,7 +494,7 @@ class _InvoicePageState extends State<InvoicePage>
                                       final tenKh = H.getValue(selectedItem, 'TEN_KH', defaultValue: '').toString();
                                       _controllers[ControlField.ten_kh]!.text = tenKh;
                                     },
-                                    onChanged: (fieldKey, newValue) {
+                                    onChanged: (fieldKey, newValue, isLookup) {
                                       // Xử lý khi mã khách hàng thay đổi (nếu cần)
                                     },
                                   ),
@@ -491,6 +532,34 @@ class _InvoicePageState extends State<InvoicePage>
                                 child: Text(status.name),
                               )).toList(),
                             ),
+                            // Hàng 5: switch chiết khấu chung, thuế chung
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: SwitchListTile(
+                                    title: const Text('Chiết khấu chung'),
+                                    value: invoice.isCkChung,
+                                    onChanged: mode == InvoiceMode.view ? null : (v) {
+                                      setState(() {
+                                        invoice.setValue('LOAI_CK', v);
+                                      });
+                                    },
+                                  ),
+                                ),
+                                Expanded(
+                                  child: SwitchListTile(
+                                    title: const Text('Nhập tiền Thuế'),
+                                    value: invoice.isThueChung,
+                                    onChanged: mode == InvoiceMode.view ? null : (v) {
+                                      setState(() {
+                                        invoice.setValue('SUA_THUE', v);
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ]
+                            )
                           ],
                         ),
                       ),
@@ -559,10 +628,10 @@ class _InvoicePageState extends State<InvoicePage>
                                   vvar: 'MA_NT',
                                   isRequired: true, noFilter: true, enabled: mode != InvoiceMode.view,
                                   onLooked: (sender, selectedItem) async {
-                                    tyGiaController.doubleValue = await ApiService.getTyGia(
+                                    tyGiaController.decimalValue = await ApiService.getTyGia(
                                         H.getValue(selectedItem, 'MA_NT', defaultValue: 'VND').toString(), ngayCt ?? DateTime.now());
                                   },
-                                  onChanged: (fieldKey, newValue) {
+                                  onChanged: (fieldKey, newValue, isLookup) {
                                     
                                   },
                                 ),
@@ -611,7 +680,8 @@ class _InvoicePageState extends State<InvoicePage>
                     children: [
                       if (mode != InvoiceMode.view) // Chỉ hiện khi ở chế độ edit/add
                         IconButton(onPressed: _scanQR, icon: const Icon(Icons.qr_code_scanner)),
-                      IconButton(onPressed: _addItem, icon: const Icon(Icons.add)),
+                      if (mode != InvoiceMode.view)
+                        IconButton(onPressed: _addItem, icon: const Icon(Icons.add)),
                     ],
                   ),
                 ),
@@ -626,8 +696,8 @@ class _InvoicePageState extends State<InvoicePage>
                               title:
                                   Text('${it.getString("MA_VT")} — ${it.getString("TEN_VT")}'),
                               subtitle: Text(
-                                  'Đơn giá: ${it.getDouble("GIA_NT21").toStringAsFixed(0)} × ${it.getDouble("SO_LUONG1").toStringAsFixed(2)} = ${it.getDouble("TIEN_NT2").toStringAsFixed(0)}'),
-                              trailing: PopupMenuButton<String>(
+                                  'Đơn giá: ${it.getDecimal("GIA_NT21").toStringAsFixed(0)} × ${it.getDecimal("SO_LUONG1").toStringAsFixed(2)} = ${it.getDecimal("TIEN_NT2").toStringAsFixed(0)}'),
+                              trailing: mode == InvoiceMode.view ? null : PopupMenuButton<String>(
                                 onSelected: (v) {
                                   if (v == 'edit') _editItem(it);
                                   if (v == 'delete') _deleteItem(it);
@@ -643,9 +713,9 @@ class _InvoicePageState extends State<InvoicePage>
                                 showDialog(
                                   context: context,
                                   builder: (_) => AlertDialog(
-                                    title: Text('Chi tiết ${it['MA_VT']}'),
+                                    title: Text('Chi tiết ${it.getString("MA_VT")}'),
                                     content: Text(
-                                        'Mô tả: ${it.getString("TEN_VT")}\nĐơn giá: ${it.getDouble("GIA_NT21")}\nSố lượng: ${it.getDouble("SO_LUONG1")}\nThuế: ${(it.getDouble("THUE_SUAT") * 100).toStringAsFixed(0)}%'),
+                                        'Mô tả: ${it.getString("TEN_VT")}\nĐơn giá: ${it.getDecimal("GIA_NT21")}\nSố lượng: ${it.getDecimal("SO_LUONG1")}\nThuế: ${(it.getDecimal("THUE_SUAT") * Decimal.fromInt(100)).toStringAsFixed(0)}%'),
                                     actions: [
                                       TextButton(
                                           onPressed: () =>

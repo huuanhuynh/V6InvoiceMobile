@@ -44,6 +44,7 @@ dependencies:
   flutter_launcher_icons: ^0.14.4
   intl: ^0.20.2
   xml: ^6.5.0
+  decimal: ^3.2.4
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +63,7 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
+    - assets/icon/
     - assets/images/
     - assets/sounds/
     - assets/data/alct1.xml

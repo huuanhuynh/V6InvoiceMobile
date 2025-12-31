@@ -49,10 +49,11 @@ class ApiService {
   static Future<ApiResponse> catalogs({
     required String vvar,
     required String filterValue,
-    required String type,
+    required String type, // '2'
     required int pageIndex,
     /// số phần tử mỗi trang.
     required int pageSize,
+    required String advance,
   }) async {
     final url = Uri.parse('$baseUrl/catalogs');
     final body = jsonEncode({
@@ -60,7 +61,7 @@ class ApiService {
       'vValue' : filterValue, // giá trị gõ vào để lọc
       'language' : 'V',
       'maDvcs' : AppSession.madvcs,
-      'advance' : null, // chưa dùng
+      'advance' : advance, // chưa dùng
       'type': type,
       'pageIndex': pageIndex,
       'pageSize': pageSize,
@@ -216,7 +217,48 @@ class ApiService {
     }
   }
 
-  
+  static Future<Map<String,dynamic>> getAlct1Config({
+    required String mact,
+    required String magd,
+  }) async 
+  {
+    try {
+      final queryParameters = {
+        'mact': mact,
+        'magd': magd,
+      };
+      Uri uri;
+      if (baseUrl.startsWith('http://')) {
+        uri = Uri.http(baseUrl.replaceFirst('http://', ''), '/invoices/alct1', queryParameters);
+      } else if (baseUrl.startsWith('https://')) {
+        uri = Uri.https(baseUrl.replaceFirst('https://', ''), '/invoices/alct1', queryParameters);
+      }
+      else {
+        uri = Uri.http(baseUrl, '/invoices/alct1', queryParameters);
+      }
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${AppSession.token}',
+        }
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body) as Map<String,dynamic>;
+        return decoded;
+      } else if (response.statusCode == 401) {
+        throw ('Unauthorized');
+      } else {
+        throw Exception('getInvoiceList Failed: ${response.body}');
+      }
+    } catch (e) {
+      throw ('Network error: $e');
+    }
+  }
+
+
 
   static getNewSttRec(String mact) {
     // Giả sử định dạng số hóa đơn là "SOH-YYYYMMDD-XXXX"
