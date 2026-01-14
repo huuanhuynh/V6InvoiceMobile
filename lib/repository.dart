@@ -1,5 +1,6 @@
 // lib/repository.dart
 import 'package:flutter/foundation.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:v6_invoice_mobile/app_session.dart';
 import 'package:v6_invoice_mobile/h.dart';
 import 'package:v6_invoice_mobile/models/api_response.dart';
@@ -13,10 +14,44 @@ class InvoiceRepository extends ChangeNotifier {
   final List<Map<String, dynamic>> _alct1SOH = [];
   List<Invoice> get invoices => List.unmodifiable(_invoices);
   PagingInfo pagingInfo = PagingInfo();
+  // Khởi tạo GetStorage
+  final _storage = GetStorage();
+  final String _invoiceKey = 'cached_invoices_soh';
+  final String _configKey = 'cached_alct1_soh';
 
   InvoiceRepository() {
     // Tải với giá trị mặc định khi khởi tạo
     //searchInvoiceList();
+    _loadFromStorage();
+  }
+
+  // --- LOGIC LƯU TRỮ (GET_STORAGE) ---
+
+  void _loadFromStorage() {
+    // 1. Tải danh sách hóa đơn đã lưu
+    final storedInvoices = _storage.read<List>(_invoiceKey);
+    if (storedInvoices != null) {
+      _invoices.clear();
+      for (var item in storedInvoices) {
+        // Giả sử Invoice có constructor fromJson hoặc chuyển đổi từ Map
+        _invoices.add(Invoice(dataV6: Map<String, dynamic>.from(item)));
+      }
+    }
+
+    // 2. Tải cấu hình Alct1 đã lưu
+    final storedConfig = _storage.read<List>(_configKey);
+    if (storedConfig != null) {
+      _alct1SOH.clear();
+      _alct1SOH.addAll(storedConfig.cast<Map<String, dynamic>>());
+    }
+    notifyListeners();
+  }
+
+  void _saveInvoicesToStorage() {
+    // Chuyển danh sách Invoice thành List các Map để lưu vào GetStorage
+    // Lưu ý: dataV6 là field bạn đang dùng để chứa raw data từ server
+    final dataToSave = _invoices.map((inv) => inv.dataV6).toList();
+    _storage.write(_invoiceKey, dataToSave);
   }
 
   // Thay đổi kiểu trả về thành Future<List<Invoice>>
@@ -114,6 +149,8 @@ class InvoiceRepository extends ChangeNotifier {
         }
         return cmp;
       }));
+      // LƯU VÀO STORAGE SAU KHI TẢI THÀNH CÔNG
+      _saveInvoicesToStorage();
       notifyListeners();
 
       // Cập nhật thông tin phân trang
@@ -136,7 +173,8 @@ class InvoiceRepository extends ChangeNotifier {
       }
       // Có thể ném lỗi hoặc trả về danh sách rỗng tùy logic
       // throw Exception('Failed to load invoices'); 
-      return []; // Trả về list rỗng khi có lỗi
+      //return []; // Trả về list rỗng khi có lỗi
+      return _invoices; // Trả về danh sách hiện có khi có lỗi
     }
   }
 
@@ -151,12 +189,14 @@ class InvoiceRepository extends ChangeNotifier {
       );
       // Logic chuyển đổi data
       List<Invoice> fetchedInvoices = [];
-      if (response['configData'] != null) {
+      if (response['data'] != null) {
         _alct1SOH.clear();
-        for (var item in response['configData']) {
+        for (var item in response['data']) {
           _alct1SOH.add(item as Map<String, dynamic>);
         }
       }
+      // LƯU CẤU HÌNH VÀO STORAGE
+      _storage.write(_configKey, _alct1SOH);
       return _alct1SOH;
       
     } catch (error) {
@@ -211,7 +251,7 @@ class InvoiceRepository extends ChangeNotifier {
         }
         _invoices.add(invoice);
       }
-      
+      _saveInvoicesToStorage(); // Cập nhật storage
       notifyListeners(); 
       return response;
     } catch (e) {
@@ -232,7 +272,7 @@ class InvoiceRepository extends ChangeNotifier {
           _invoices[idx] = invoice;
         }  
       }
-      
+      _saveInvoicesToStorage(); // Cập nhật storage
       notifyListeners();
       return response;
 
@@ -247,6 +287,7 @@ class InvoiceRepository extends ChangeNotifier {
       
       if (H.objectToBool(response.data)) {
         _invoices.removeWhere((i) => i.sttrec == invoice.sttrec);
+        _saveInvoicesToStorage(); // Cập nhật storage
         notifyListeners();
       }
       return response;

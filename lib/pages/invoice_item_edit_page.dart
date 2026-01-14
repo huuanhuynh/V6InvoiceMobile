@@ -1,12 +1,10 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
 import 'package:v6_invoice_mobile/controls/textboxc.dart';
 import 'package:v6_invoice_mobile/controls/v6_vvar_textbox.dart';
 import 'package:v6_invoice_mobile/h.dart';
 import 'package:v6_invoice_mobile/repository.dart';
-import 'package:xml/xml.dart';
 
 import '../models/invoice_item.dart';
 

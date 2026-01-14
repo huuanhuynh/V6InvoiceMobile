@@ -177,19 +177,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                 itemCount: _invList.length,
                 itemBuilder: (context, idx) {
                   final inv = _invList[idx];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: inv.canEdit ? AppColors.primary : AppColors.bottomTabsBackground,
-                      child: Text(inv.tSoLuong.toStringAsFixed(0), style: const TextStyle(color: Colors.white)),
-                    ),
-                    title: Text('${inv.soCt} • ${inv.ngayCt.toIso8601String().split('T')[0]}'),
-                    subtitle: Text('${inv.getString('TEN_KH')} ••• ${inv.
-                      detailDatas[0]?.getString('TEN_VT')} x ${inv.detailDatas[0]?.getDecimal('SO_LUONG').toStringAsFixed(0)}${inv.
-                      detailDatas.length > 1 ? ' .....' : ''}'),
-                    
-                    //trailing: Text(inv.tSoLuong.toStringAsFixed(0)),
-                    onTap: ()=> _invTap(inv),
-                  );
+                  return _buildListTile(inv);
                 },
               ),
             ),
@@ -313,6 +301,31 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
 
   void _invTap(Invoice inv) {
       editCurrentInvoice('SOH', inv);
+  }
+  
+  String _buildInvText2(Invoice inv) {
+    String result = '';
+    result += inv.getString('TEN_KH');
+    if (inv.detailDatas.isNotEmpty) {
+      result += ' ••• ${inv.detailDatas[0].getString('TEN_VT')} x ${inv.detailDatas[0].getDecimal('SO_LUONG').toStringAsFixed(0)}';
+      if (inv.detailDatas.length > 1) {
+        result += ' .....';
+      }
+    }
+    return result;
+  }
+  
+  _buildListTile(Invoice inv) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: inv.canEdit ? AppColors.primary : AppColors.bottomTabsBackground,
+        child: Text(inv.tSoLuong.toStringAsFixed(0), style: const TextStyle(color: Colors.white)),
+      ),
+      title: Text('${inv.soCt} • ${inv.ngayCt.toIso8601String().split('T')[0]}'),
+      subtitle: Text(_buildInvText2(inv)),
+      //trailing: Text(inv.tSoLuong.toStringAsFixed(0)), //Text bên phải.
+      onTap: ()=> _invTap(inv),
+    );
   }
 
   

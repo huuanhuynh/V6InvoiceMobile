@@ -1,39 +1,48 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
-import 'package:v6_invoice_mobile/models/invoice.dart';
-import 'package:v6_invoice_mobile/pages/invoice_list_page.dart';
-import 'package:v6_invoice_mobile/pages/login_page.dart';
-import 'package:v6_invoice_mobile/screens/login_screen.dart';
-import 'repository.dart';
-import 'pages/invoice_page.dart';
+import 'package:v6_invoice_mobile/repository.dart';
+import 'core/routes/app_pages.dart';
+import 'core/routes/app_routes.dart';
+import 'core/config/environment.dart';
+import 'core/config/app_colors.dart';
 
-void main() {
-  runApp(const V6InvoiceApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Determine which environment file to load
+  // Priority: --dart-define > build flavor > default (.env.dev)
+  const flavor = String.fromEnvironment('FLAVOR', defaultValue: 'dev');
+  final envFile = '.env.$flavor';
+
+  // Load environment variables from the appropriate .env file
+  await dotenv.load(fileName: envFile);
+
+  // Initialize GetStorage for local storage
+  await GetStorage.init();
+
+  // Print environment config in debug mode
+  Environment.printConfig();
+
+  runApp(const MyApp());
 }
 
-class V6InvoiceApp extends StatelessWidget {
-  const V6InvoiceApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => InvoiceRepository(),
-      child: MaterialApp(
-        title: 'V6 Invoice Mobile',
-        theme: ThemeData(
-          primarySwatch: Colors.indigo,
-          useMaterial3: false,
-        ),
-        // 1. Đặt trang khởi động mặc định là LoginPage
-        initialRoute: LoginPage.routeName,
-        routes: {
-          // Trang Login: Sẽ là trang đầu tiên (hoặc đặt route là '/')
-          LoginPage.routeName: (_) => const LoginPage(), 
-          InvoiceListPage.routeName: (_) => const InvoiceListPage(),
-          InvoicePage.routeName: (_) => InvoicePage(mact: "SOH", invoice: Invoice(), mode: InvoiceMode.view),
-        },
-      ),
+      child: GetMaterialApp(
+        title: Environment.appName,
+        theme: AppTheme.light,
+        initialRoute: AppRoutes.LOGIN_PAGE,
+        getPages: AppPages.pages,
+        debugShowCheckedModeBanner: !Environment.isProduction,
+      )
     );
   }
 }

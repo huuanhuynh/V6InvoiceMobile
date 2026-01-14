@@ -4,7 +4,7 @@ class AppSession {
   static String? madvcs;
   static Map<String, dynamic>? userData;
 
-  static dynamic userInfo;
+  static dynamic loginData;
 
   static bool get isLoggedIn => token != null;
 }

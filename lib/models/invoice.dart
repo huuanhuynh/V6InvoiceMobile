@@ -261,7 +261,7 @@ class Invoice implements DataHandler {
   // }
   
 
-  void readDetails({dynamic? dataAPI, dynamic? dataV6}) {
+  void readDetails({dynamic dataAPI, dynamic dataV6}) {
     detailDatas = [];
     if (dataV6 != null && dataV6 is List) {
       for (var item in dataV6) {

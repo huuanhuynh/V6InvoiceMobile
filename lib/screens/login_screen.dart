@@ -170,8 +170,8 @@ class _LoginScreenState extends State<LoginScreen> {
         final data = jsonDecode(apiResponse.response!.body);
         if (data['access_token'] != null) {
           AppSession.token = data['access_token'];
-          AppSession.userInfo = data;
-          AppSession.madvcs = 'BB';
+          AppSession.loginData = data;
+          //AppSession.madvcs = 'BB';
           _loadAndSelectCatalog(context);
         }
       } else {

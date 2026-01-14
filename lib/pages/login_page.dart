@@ -1,13 +1,16 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:v6_invoice_mobile/app_session.dart';
+import 'package:v6_invoice_mobile/core/routes/app_routes.dart';
 import 'package:v6_invoice_mobile/h.dart';
+import 'package:v6_invoice_mobile/pages/home_page.dart';
 import 'package:v6_invoice_mobile/pages/invoice_list_page.dart';
 import 'package:v6_invoice_mobile/services/api_service.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({Key? key});
   static const routeName = '/login'; 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -93,9 +96,8 @@ class _LoginPageState extends State<LoginPage> {
         final data = jsonDecode(apiResponse.response!.body);
         if (data['access_token'] != null) {
           AppSession.token = data['access_token'];
-          AppSession.userInfo = data;
-          AppSession.madvcs = 'BB';
-          _loadAndSelectCatalog(context);
+          AppSession.loginData = data;
+          _loadAndSelectMADVCS();
         }
       } else {
         setState(() {
@@ -120,33 +122,26 @@ class _LoginPageState extends State<LoginPage> {
 
 
 
-  Future<void> _loadAndSelectCatalog(BuildContext context) async {
-    // Đặt giá trị mặc định cho các tham số catalogs. Cần điều chỉnh theo thực tế.
-    const String fvvar = 'MA_DVCS'; // Ví dụ: biến API để lấy danh sách đơn vị
-    const String type = '2';
-    const String filterValue = '';
-    const int pageIndex = 1;
-    const int pageSize = 100;
-
+  Future<void> _loadAndSelectMADVCS() async {
     setState(() {
       _isLoading = true; // Bật loading trong khi load danh mục
       _statusText = 'Đang tải danh mục DVCS...';
     });
     
     try {
-      // Gọi API để lấy danh sách
+      // Lấy danh sách DVCS.
       final apiResponse = await ApiService.catalogs(
-        vvar: fvvar,
-        filterValue: filterValue,
-        type: type,
-        pageIndex: pageIndex,
-        pageSize: pageSize,
+        vvar: 'MA_DVCS',
+        filterValue: '',
+        type: '2',
+        pageIndex: 1,
+        pageSize: 100,
         advance: '',
       );
 
       if (apiResponse.error == null && apiResponse.data != null) {
         final parsed = apiResponse.data;
-        // Trích xuất danh sách items từ data (dựa trên logic bạn cung cấp)
+        // Trích xuất danh sách items từ data
         final List<dynamic> listItems = parsed is List ? parsed : (parsed['items'] ?? parsed['data'] ?? []);
 
         setState(() {
@@ -154,13 +149,21 @@ class _LoginPageState extends State<LoginPage> {
         });
 
         if (listItems.isNotEmpty) {
-          final selectedItem = await showCatalogSelectionDialog(context, listItems);
+          final selectedItem = await showCatalogSelectionDialog(listItems);
           
           if (selectedItem != null) {
             AppSession.madvcs = H.getValue(selectedItem, 'MA_DVCS');
             // Chuyển hướng đến trang chính sau khi chọn đơn vị
             if (mounted) {
-              Navigator.pushReplacementNamed(context, InvoiceListPage.routeName);
+              //Navigator.pushReplacementNamed(context, InvoiceListPage.routeName);
+              // đi đến home_page
+              // Navigator.pushNamedAndRemoveUntil(
+              //   context,
+              //   HomePage.routeName,
+              //   (Route<dynamic> route) => false,
+              // );
+              // đi đến home_page dùng Get
+              Get.toNamed(AppRoutes.HOME);
             }
           } else {
             // Người dùng đóng Dialog mà không chọn
@@ -194,8 +197,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<Map<String, dynamic>?> showCatalogSelectionDialog(
-      BuildContext context, List<dynamic> items) {
+  Future<Map<String, dynamic>?> showCatalogSelectionDialog(List<dynamic> items) {
     
     // Xử lý trường hợp items có thể là Map<String, dynamic> (nếu bạn dùng ListView)
     final List<Map<String, dynamic>> catalogList = 

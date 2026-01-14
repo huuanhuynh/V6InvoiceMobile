@@ -354,6 +354,45 @@ class _InvoicePageState extends State<InvoicePage>
     });
   }
 
+  Future<void> _maSonbLooked(V6VvarTextBox sender, Map<String, dynamic> selectedData) async {
+    String mact = H.getValue(selectedData, 'MA_CTNB', defaultValue: '').toString();
+    if (mact.isNotEmpty) {
+      invoice.setString('MA_CT', mact);
+    }
+    var newSoCt = await _getNewSoCt(
+        sender.controller.text,
+        ngayCt ?? DateTime.now(),
+    );
+    _controllers[ControlField.so_ct]!.setValue(newSoCt);
+  }
+
+  Future<String> _getNewSoCt(String masonb, DateTime ngayct) async {
+    var result = await ApiService.getNewSoct(masonb, ngayct);
+    if (result.data == null) return "";
+    var data = result.data["data"];
+    if (data.length == 0) return "";
+    String formatText = H.getString(data[0], "TRANSFORM").trim();
+    if (formatText == "") return "";
+    var value = H.getInt(data[0], "SO_CT");
+    var sResult = formatSoCt(formatText, value);
+    return sResult;
+  }
+
+  /// Định dạng số chứng từ dựa trên chuỗi định dạng XXXX{0:00...0} và giá trị số
+  String formatSoCt(String transform, int value) {
+    // Regex tìm cấu trúc {0:00...0}
+    final regExp = RegExp(r'\{0:(0+)\}');
+    
+    return transform.replaceAllMapped(regExp, (match) {
+      // Lấy chuỗi số 0 (ví dụ: "0000" hoặc "00000")
+      String zeros = match.group(1) ?? "";
+      int precision = zeros.length; // Đếm số lượng số 0
+      
+      // Định dạng lại giá trị value
+      return value.toString().padLeft(precision, '0');
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // invoice = context
@@ -431,13 +470,7 @@ class _InvoicePageState extends State<InvoicePage>
                                     vvar: 'MA_SONB',
                                     isRequired: true,
                                     enabled: mode != InvoiceMode.view,
-                                    onLooked: (sender, selectedData) {
-                                      String mact = H.getValue(selectedData, 'MA_CTNB', defaultValue: '').toString();
-                                      if (mact.isNotEmpty) {
-                                        invoice.setString('MA_CT', mact);
-                                      }
-                                      _controllers[ControlField.so_ct]!.setValue('$mact-GEN001');
-                                    },
+                                    onLooked: _maSonbLooked,
                                     onChanged: (fieldKey, newValue, isLookup) {
                                       // Xử lý khi mã nội bộ thay đổi (nếu cần)
                                     },
@@ -784,5 +817,5 @@ class _InvoicePageState extends State<InvoicePage>
     );
   }
 
-  
+
 }

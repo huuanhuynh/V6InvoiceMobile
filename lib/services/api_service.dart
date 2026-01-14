@@ -392,7 +392,44 @@ class ApiService {
     }
   }
 
-  
+  static Future<ApiResponse> getNewSoct(String masonb, DateTime ngayct) async {
+    final token = AppSession.token;
+    try {
+      final queryParameters = {
+        'masonb': masonb,
+        'ngayct': H.objectToString(ngayct, dateFormat: 'yyyyMMdd')
+      };
+      Uri uri;
+      if (baseUrl.startsWith('http://')) {
+        uri = Uri.http(baseUrl.replaceFirst('http://', ''), '/invoices/getnewsoct', queryParameters);
+      } else if (baseUrl.startsWith('https://')) {
+        uri = Uri.https(baseUrl.replaceFirst('https://', ''), '/invoices/getnewsoct', queryParameters);
+      }
+      else {
+        uri = Uri.http(baseUrl, '/invoices/getnewsoct', queryParameters);
+      }
 
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        }
+      );
+
+      ApiResponse result = ApiResponse();
+      result.response = response;
+      if (response.statusCode == 200) {
+        result.data = jsonDecode(response.body);
+      } else if (response.statusCode == 401) {
+        throw ('Unauthorized');
+      } else {
+        result.error = response.reasonPhrase;
+      }
+      return result;
+    } catch (e) {
+      throw ('Error: $e');
+    }
+  }
 
 }
