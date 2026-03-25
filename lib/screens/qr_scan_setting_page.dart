@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SettingPage extends StatefulWidget {
-  const SettingPage({super.key});
+class QrScanSettingPage extends StatefulWidget {
+  const QrScanSettingPage({super.key});
 
   @override
-  State<SettingPage> createState() => _SettingPageState();
+  State<QrScanSettingPage> createState() => _QrScanSettingPageState();
 }
 
-class _SettingPageState extends State<SettingPage> {
+class _QrScanSettingPageState extends State<QrScanSettingPage> {
   bool? _autoScan; // dùng nullable để biết đã load chưa
 
   @override

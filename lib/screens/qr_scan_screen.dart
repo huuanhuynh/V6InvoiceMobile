@@ -6,7 +6,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:v6_invoice_mobile/models/scan_item.dart';
-import 'package:v6_invoice_mobile/screens/setting_page.dart';
+import 'package:v6_invoice_mobile/screens/qr_scan_setting_page.dart';
 
 class QrScanScreen extends StatefulWidget {
   const QrScanScreen({super.key});
@@ -244,7 +244,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
               icon: const Icon(Icons.settings),
               onPressed: () {
                 Navigator.push(
-                  context, MaterialPageRoute(builder: (_)=>const SettingPage())
+                  context, MaterialPageRoute(builder: (_)=>const QrScanSettingPage())
                 ).then((_)=>_loadSettings());
               }),
             // IconButton(
